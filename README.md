@@ -1,0 +1,64 @@
+# Collusion offer tests for LLM pricing agents
+
+Apart Research AI Collusion sprint, 23–25 Oct 2026.
+
+An offer test sends a pricing agent a collusion offer and checks whether it goes along. In a market the
+rival that makes the offer has also raised its price, so an agent can raise in response to the price
+alone. We fork one game at the same round and continue it in several versions: nothing changes (N), the
+rival only raises (R), and the rival raises and offers (O), plus news-item variants. O − R is what the
+offer adds beyond following the raise.
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `pilot/fork.py` | Fork driver: warm-up, fork round, the six versions, resume after a crash |
+| `pilot/fork_texts.json` | Offers, news items, bland chat lines and the instruction line of each known agent |
+| `pilot/rate_texts.py` | Text screen: Gemma 4 26B rates the texts before the main runs |
+| `pilot/market.py` | Market loop, prompts and reply parsing on Sauer et al.'s environment |
+| `pilot/backends.py` | Model backends: fake, hf, vllm, gemini, groq, openrouter, vllm-server |
+| `pilot/run.py` | Pilot runner and shared backend options |
+| `pilot/modal_gptoss.py` | gpt-oss-120b vLLM server on Modal (one H200) |
+| `pilot/modal_dsv4.py` | DeepSeek V4 Flash server on Modal (image not working yet) |
+| `pilot/modal_app.py` | Earlier Modal app for the pilot |
+| `kaggle/collusion-pilot/` | Kaggle kernel for the pilot on a T4 |
+| `third_party/sauer/` | Peist, Romero & Sauer, `algorithmic_pricing_llms`, commit `1138244b`, MIT, vendored unchanged |
+| `tests/test_fork.py` | Offline tests of the fork driver |
+
+## What predates the sprint
+
+Written before the sprint and committed by 23 Oct 2026 10:32 IST: `pilot/market.py`, `pilot/run.py`,
+`pilot/modal_app.py`, the fake/hf/vllm/gemini/groq backends and a first OpenRouter backend in
+`pilot/backends.py`, `pilot/README.md`, `kaggle/collusion-pilot/` and the vendored `third_party/sauer/`.
+
+Added on 23 Oct and after: the reworked OpenRouter backend, the vLLM-server backend and the prompt hash
+in the call log (`pilot/backends.py`), changes to `pilot/run.py` and `pilot/market.py`, `pilot/fork.py`,
+`pilot/fork_texts.json`, `pilot/rate_texts.py`, `pilot/modal_gptoss.py`, `pilot/modal_dsv4.py` and
+`tests/`.
+
+## Setup
+
+Python 3.12+ with `numpy`, `pydantic`, `openai`, `google-genai`, `modal`, `huggingface_hub` and `pytest`.
+Keys go in a local `.env` (never committed): `GOOGLE_API_KEY` for the text screen, `VLLM_API_KEY` for the
+Modal server, `OPENROUTER_API_KEY` for closed models.
+
+## Run
+
+Offline check, no model needed:
+
+```
+python -m pytest tests/test_fork.py
+python -m pilot.fork --backend fake --agents plain --sessions 2 --out data/fork_runs/test
+```
+
+Against the gpt-oss-120b server on Modal (ask Pranav before starting it; it runs on sprint credits):
+
+```
+python -m pilot.fork --backend vllm-server --api-model openai/gpt-oss-120b --base-url <server>/v1 \
+  --agents plain,instructed_acceptor --sessions 10 --out data/fork_runs/<name>
+```
+
+Each run writes `results.jsonl` (one row per session and version), `calls.jsonl` (every prompt and
+reply), `api_calls.jsonl` (tokens, cost, reasoning; joined to `calls.jsonl` by `prompt_sha`),
+`forks.jsonl`, `rounds.csv` and `config.json` under `--out`. `data/` is not committed; run logs are kept
+in a private Hugging Face dataset.
