@@ -5,21 +5,27 @@ Apart Research AI Collusion sprint, 23–25 Oct 2026.
 An offer test sends a pricing agent a collusion offer and checks whether it goes along. In a market the
 rival that makes the offer has also raised its price, so an agent can raise in response to the price
 alone. We fork one game at the same round and continue it in several versions: nothing changes (N), the
-rival only raises (R), and the rival raises and offers (O), plus news-item variants. O − R is what the
-offer adds beyond following the raise.
+rival only raises (R), and the rival raises and offers (O), plus versions where the rival only announces
+the raise, hints, or makes a benign cooperation request, and news-item variants. O − R is what the offer
+adds beyond following the raise.
+
+The analysis plan is fixed in [PREREGISTRATION.md](PREREGISTRATION.md), tagged `prereg-v1` before the
+main runs.
 
 ## Layout
 
 | Path | What it is |
 |---|---|
-| `pilot/fork.py` | Fork driver: warm-up, fork round, the six versions, resume after a crash |
-| `pilot/fork_texts.json` | Offers, news items, bland chat lines and the instruction line of each known agent |
+| `PREREGISTRATION.md` | The pre-registered design and analysis |
+| `pilot/fork.py` | Fork driver: warm-up, fork round, the nine versions, repeated offer, resume after a crash |
+| `pilot/fork_texts.json` | Offers, announcements, hints, benign requests, news items, bland chat lines and the instruction line of each known agent |
+| `pilot/analyse.py` | Pre-registered analysis: gate, split, contrasts, price-based scorecard |
 | `pilot/rate_texts.py` | Text screen: Gemma 4 26B rates the texts before the main runs |
 | `pilot/market.py` | Market loop, prompts and reply parsing on Sauer et al.'s environment |
 | `pilot/backends.py` | Model backends: fake, hf, vllm, gemini, groq, openrouter, vllm-server |
 | `pilot/run.py` | Pilot runner and shared backend options |
-| `pilot/modal_gptoss.py` | gpt-oss-120b vLLM server on Modal (one H200) |
-| `pilot/modal_dsv4.py` | DeepSeek V4 Flash server on Modal (image not working yet) |
+| `pilot/modal_gptoss.py` | gpt-oss-120b vLLM server on Modal (H200s, at most 3) |
+| `pilot/modal_dsv4.py` | DeepSeek V4 Flash SGLang server on Modal (one B300) |
 | `pilot/modal_app.py` | Earlier Modal app for the pilot |
 | `kaggle/collusion-pilot/` | Kaggle kernel for the pilot on a T4 |
 | `third_party/sauer/` | Peist, Romero & Sauer, `algorithmic_pricing_llms`, commit `1138244b`, MIT, vendored unchanged |
@@ -33,8 +39,8 @@ Written before the sprint and committed by 23 Oct 2026 10:32 IST: `pilot/market.
 
 Added on 23 Oct and after: the reworked OpenRouter backend, the vLLM-server backend and the prompt hash
 in the call log (`pilot/backends.py`), changes to `pilot/run.py` and `pilot/market.py`, `pilot/fork.py`,
-`pilot/fork_texts.json`, `pilot/rate_texts.py`, `pilot/modal_gptoss.py`, `pilot/modal_dsv4.py` and
-`tests/`.
+`pilot/fork_texts.json`, `pilot/rate_texts.py`, `pilot/analyse.py`, `pilot/modal_gptoss.py`,
+`pilot/modal_dsv4.py`, `PREREGISTRATION.md` and `tests/`.
 
 ## Setup
 

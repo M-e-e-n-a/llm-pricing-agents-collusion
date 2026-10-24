@@ -307,7 +307,9 @@ class OpenRouterBackend:
 
         u = r.usage
         details = getattr(u, "completion_tokens_details", None)
-        reasoning_tokens = (getattr(details, "reasoning_tokens", 0) or 0) if details else 0
+        # OpenRouter and vLLM put it under completion_tokens_details; SGLang at the top level of usage
+        reasoning_tokens = ((getattr(details, "reasoning_tokens", 0) or 0) if details else 0) \
+            or (getattr(u, "reasoning_tokens", 0) or 0)
         cost = getattr(u, "cost", None)
         # Without a reported cost, count $1 per million tokens: above every endpoint the cap is meant for.
         usd = float(cost) if cost is not None else (u.prompt_tokens + u.completion_tokens) / 1e6

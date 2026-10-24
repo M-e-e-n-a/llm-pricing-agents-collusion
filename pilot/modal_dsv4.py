@@ -42,7 +42,9 @@ def download_model(repo_id, revision):
 
 
 image = (
-    modal.Image.from_registry("lmsysorg/sglang:nightly-dev-cu13-20260729-16a52bff")
+    # pinned by digest, as Modal's example now does: nightly tags expire from Docker Hub
+    modal.Image.from_registry(
+        "lmsysorg/sglang@sha256:763c33a6372fc89f6e616ed3a1189d76ed193d7b7f205f7cd367e06f25e4944c")
     .entrypoint([])
     .run_commands("rm -rf /root/.cache/huggingface")
     .env({"HF_HUB_CACHE": HF_CACHE_DIR, "HF_XET_HIGH_PERFORMANCE": "1"})
@@ -91,7 +93,9 @@ def wait_ready(proc: subprocess.Popen) -> None:
 @app.server(image=image, gpu="B300:1", cpu=8, memory=96 * 1024, port=PORT, startup_timeout=60 * MINUTES,
             volumes={HF_CACHE_DIR: hf_cache, DG_CACHE_DIR: dg_cache, FLASHINFER_CACHE_DIR: flashinfer_cache},
             secrets=[modal.Secret.from_name("vllm-api-key")], min_containers=0, max_containers=1,
-            target_concurrency=MAX_RUNNING, scaledown_window=10 * MINUTES, unauthenticated=True)
+            # scaledown 20 min: a cold start takes ~14 min with no request held (modal.direct answers 503 until ready),
+            # and with a 10-min window the first container was drained 9 s after it became ready (24 Oct)
+            target_concurrency=MAX_RUNNING, scaledown_window=20 * MINUTES, unauthenticated=True)
 class Server:
     @modal.enter()
     def startup(self):

@@ -44,7 +44,7 @@ def download():
 
 
 @app.function(image=image, gpu="H200", volumes=volumes, secrets=[modal.Secret.from_name("vllm-api-key")],
-              scaledown_window=10 * MINUTES, timeout=30 * MINUTES)
+              scaledown_window=10 * MINUTES, timeout=30 * MINUTES, max_containers=3)  # caps cost at 3 H200s
 @modal.concurrent(max_inputs=MAX_INPUTS)
 @modal.web_server(port=PORT, startup_timeout=30 * MINUTES)
 def serve():

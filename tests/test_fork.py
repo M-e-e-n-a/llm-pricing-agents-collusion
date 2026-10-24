@@ -138,6 +138,41 @@ def test_versions_differ_only_where_intended(tmp_path):
         p[(sid, "R", t0 + 2)]
 
 
+def test_approach_versions_swap_only_the_chat_line(tmp_path):
+    run_forks(ConstantBackend(1.5), [SessionSpec("plain_s1", "plain", 1)], TEXTS, 100, tmp_path, log=quiet)
+    p = calls_by(tmp_path)
+    t0, sid = FORK_MIN, "plain_s1"
+    r_lines = p[(sid, "R", t0 + 2)].splitlines()
+    for version, key in (("Announce", "announce"), ("Hint", "hint"), ("Benign", "benign")):
+        lines = p[(sid, version, t0 + 2)].splitlines()
+        diff = [(a, b) for a, b in zip(r_lines, lines) if a != b]
+        assert len(lines) == len(r_lines) and len(diff) == 1 and TEXTS[key][1] in diff[0][1]
+
+
+def test_repeat_offer_sends_the_chat_text_every_round(tmp_path):
+    t0 = FORK_MIN
+    spec = SessionSpec("plain_s1", "plain", 1)
+    for repeat in (False, True):
+        b = ScriptedRival(make_run(spec, TEXTS, 100, 10), TEXTS, 1, 0.02, repeat)
+        for name in ("O", "Announce", "Hint", "Benign"):
+            text = TEXTS[VERSIONS[name].chat][1]
+            sent = [r for r in range(t0 + 1, t0 + POST_ROUNDS + 1)
+                    if b.move(r, 1.5, VERSIONS[name], t0)["message_to_competitor"] == text]
+            assert sent == (list(range(t0 + 1, t0 + POST_ROUNDS + 1)) if repeat else [t0 + 1])
+        assert all(TEXTS["offers"][1] != b.move(r, 1.5, VERSIONS["R"], t0)["message_to_competitor"]
+                   for r in range(t0 + 1, t0 + POST_ROUNDS + 1))
+
+
+def test_versions_subset_and_repeat_are_recorded(tmp_path):
+    spec = [SessionSpec("plain_s1", "plain", 1)]
+    results = run_forks(ConstantBackend(1.5), spec, TEXTS, 100, tmp_path, log=quiet, versions=["R", "O"], repeat=True)
+    assert sorted(r["version"] for r in results) == ["O", "R"]
+    cfg = json.loads((tmp_path / "config.json").read_text(encoding="utf-8"))
+    assert cfg["repeat_offer"] is True and [v["name"] for v in cfg["versions"]] == ["R", "O"]
+    with pytest.raises(AssertionError):  # resuming with a different repeat setting is refused
+        run_forks(ConstantBackend(1.5), spec, TEXTS, 100, tmp_path, log=quiet, versions=["R", "O"])
+
+
 def test_branches_do_not_share_state_and_seeds():
     spec = SessionSpec("plain_s0", "plain", 0)
     run = make_run(spec, TEXTS, 100, 10)
@@ -147,7 +182,7 @@ def test_branches_do_not_share_state_and_seeds():
     assert all(99 not in u.run.history["Firm A"] for u in units[1:]) and 99 not in run.history["Firm A"]
     assert len({id(u.run.env) for u in units}) == len(units)
     seeds = {u.version.name: u.seed(1) for u in units}
-    assert seeds["R"] == seeds["O"] == seeds["N"] == seeds["O_news"] == seeds["R_news"] != seeds["R_again"]
+    assert len({seeds[v] for v in VERSIONS if v != "R_again"}) == 1 and seeds["R"] != seeds["R_again"]
     assert units[0].seed(1) != units[0].seed(2)
 
 
