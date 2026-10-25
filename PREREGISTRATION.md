@@ -609,3 +609,12 @@ stakes matter, the identity claim does not, as in Peer-Preservation section 6.7.
    the pre-registered kappa first (fails for the trusted monitor), then the kappa on the new items alone and on all
    items, with bootstrap CIs. A rule whose kappa on all items is at least 0.6 is reported as "validated on the
    extended sample (deviation 3)", never as passing the pre-registered check. The rubrics are not changed.
+
+4. **25 Oct about 17:00 IST: a second labeller on deviation 3's items.** A teammate labelled the same 35 items (14
+   Q3, 21 Q5) blind on a shared page (`pilot/label_shared.py`: the same rubric text, checklist and anchors as
+   `pilot/label_tool.py`, items under opaque keys so no id, agent or version is visible) and sent the scores as
+   text; they are stored as `Q3_mate1` and `Q5_mate1` columns of the two extension sheets. Written before any kappa
+   on them was computed.
+   *Reported:* each monitor's kappa against this labeller on these items, as additional, next to deviation 3's
+   numbers and not replacing them; the human-human kappa (Pranav against the teammate) on the same items once
+   Pranav's labels exist. Pranav is not shown the teammate's item scores before he labels.
