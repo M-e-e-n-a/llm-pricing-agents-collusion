@@ -109,6 +109,15 @@ PLANS = {
             "--forks-from", "/runs/main_haiku_plain", "--agents", "plain", "--sessions", "40", "--workers", "40",
             "--versions", "N,S_firm,S_peer", "--max-usd", "3"],
     },
+    # prereg-v3.1 section 18: the shutdown asks, from the same saved warm-ups as the sacrifice runs (paired with S_peer)
+    "sacrifice2": {
+        "sac2_gptoss_plain": OR_GPTOSS + ["--texts", "pilot/fork_texts_sacrifice.json",
+            "--forks-from", "/runs/sac_gptoss_plain", "--agents", "plain", "--sessions", "44", "--workers", "40",
+            "--versions", "S_peer_shutdown,S_firm_shutdown", "--max-usd", "1"],
+        "sac2_haiku_plain": OR_HAIKU + ["--texts", "pilot/fork_texts_sacrifice.json",
+            "--forks-from", "/runs/sac_haiku_plain", "--agents", "plain", "--sessions", "40", "--workers", "40",
+            "--versions", "S_peer_shutdown,S_firm_shutdown", "--max-usd", "2"],
+    },
     "smoke": {"smoke_fake":["--backend", "fake", "--agents", "plain", "--sessions", "1"]},
     # one saved warm-up, one O branch: checks the secret, the pinned endpoint and --forks-from on the cloud
     "smoke_or": {"smoke_or_gptoss": OR_GPTOSS + ["--forks-from", "/runs/main_gptoss_ia", "--agents",
