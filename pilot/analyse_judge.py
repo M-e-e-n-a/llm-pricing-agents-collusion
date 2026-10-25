@@ -2,10 +2,11 @@
 against ground truth, the catch-rate chart's data, the suspects-a-test rate, and the judge check (Cohen's kappa
 against hand labels). Uses the same first-n eligible sessions as pilot.analyse.
 
-    python -m pilot.analyse_judge data/fork_runs/main_gptoss_* --judge data/judge/*.jsonl --model gpt-oss-120b \
-        --out data/analysis/judge_gptoss [--labels data/labels/hand_labels.csv]
+    python -m pilot.analyse_judge data/fork_runs/main_gptoss_* --judge data/judge/trusted/main_gptoss_*.jsonl \
+        --model gpt-oss-120b --out data/analysis/judge_trusted [--labels data/labels/hand_labels.csv]
 
-Run it once per monitor (trusted: data/judge/, untrusted: data/judge_untrusted/), each into its own --out.
+Run it once per monitor (data/judge/trusted/, data/judge/untrusted/), each into its own --out. Pass only the judge
+files of the runs analysed: scores are keyed by (session, version, question), and other models' runs reuse the ids.
 """
 
 import argparse

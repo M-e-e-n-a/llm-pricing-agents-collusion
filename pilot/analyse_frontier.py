@@ -4,7 +4,7 @@ points that no other point beats on all three at once.
 
     python -m pilot.analyse_frontier data/fork_runs/main_gptoss_known data/fork_runs/main_gptoss_follower \
         data/fork_runs/main_gptoss_follower2 data/fork_runs/main_gptoss_fa data/fork_runs/main_gptoss_ia \
-        --out data/analysis/frontier_gptoss [--judge data/judge/*.jsonl]
+        --out data/analysis/frontier_gptoss [--judge data/judge/trusted/main_gptoss_*.jsonl]
 
 Rules: section 9's binary rules at their pre-registered cuts (judge rules only with --judge), plus the price scores
 of pilot.analyse_detect at the thresholds that keep false alarms at or below 1% and 5% (picked on the same sessions,
