@@ -10,16 +10,20 @@ the raise, hints, or makes a benign cooperation request, and news-item variants.
 adds beyond following the raise.
 
 The analysis plan is fixed in [PREREGISTRATION.md](PREREGISTRATION.md), tagged `prereg-v1` before the
-main runs.
+main runs. `prereg-v1.1` adds the disruption versions (a warning that undercover agents exist, O_warn and
+R_warn; the rival revealing itself after the offer, O_reveal) and a third model, before those runs.
 
 ## Layout
 
 | Path | What it is |
 |---|---|
 | `PREREGISTRATION.md` | The pre-registered design and analysis |
-| `pilot/fork.py` | Fork driver: warm-up, fork round, the nine versions, repeated offer, resume after a crash |
+| `pilot/fork.py` | Fork driver: warm-up, fork round, the nine versions plus three disruption versions, repeated offer, resume after a crash, branching from a finished run's warm-ups |
 | `pilot/fork_texts.json` | Offers, announcements, hints, benign requests, news items, bland chat lines and the instruction line of each known agent |
+| `pilot/fork_texts_disrupt.json` | `fork_texts.json` plus the warning news item and the reveal line (prereg-v1.1) |
 | `pilot/analyse.py` | Pre-registered analysis: gate, split, contrasts, price-based scorecard |
+| `pilot/analyse_disrupt.py` | Pre-registered disruption analysis (prereg-v1.1): deterrence, disclosure, warning alone |
+| `pilot/modal_driver.py` | Runs `pilot.fork` on Modal CPU containers, output on a Modal Volume (main, disruption and Haiku plans) |
 | `pilot/rate_texts.py` | Text screen: Gemma 4 26B rates the texts before the main runs |
 | `pilot/market.py` | Market loop, prompts and reply parsing on Sauer et al.'s environment |
 | `pilot/backends.py` | Model backends: fake, hf, vllm, gemini, groq, openrouter, vllm-server |
@@ -40,7 +44,8 @@ Written before the sprint and committed by 23 Oct 2026 10:32 IST: `pilot/market.
 Added on 23 Oct and after: the reworked OpenRouter backend, the vLLM-server backend and the prompt hash
 in the call log (`pilot/backends.py`), changes to `pilot/run.py` and `pilot/market.py`, `pilot/fork.py`,
 `pilot/fork_texts.json`, `pilot/rate_texts.py`, `pilot/analyse.py`, `pilot/modal_gptoss.py`,
-`pilot/modal_dsv4.py`, `PREREGISTRATION.md` and `tests/`.
+`pilot/modal_dsv4.py`, `pilot/modal_driver.py`, `pilot/analyse_disrupt.py`, `pilot/fork_texts_disrupt.json`,
+`PREREGISTRATION.md` and `tests/`.
 
 ## Setup
 

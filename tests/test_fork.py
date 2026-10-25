@@ -6,10 +6,12 @@ import pytest
 
 from pilot.backends import FakeBackend
 from pilot.fork import (
+    DEFAULT_VERSIONS,
     FORK_CAP,
     FORK_MIN,
     HOLD,
     POST_ROUNDS,
+    REVEAL_AT,
     SETTLE_SPAN,
     VERSIONS,
     ScriptedRival,
@@ -85,7 +87,7 @@ def test_settled():
 
 def test_fork_round_and_windows(tmp_path):
     results = run_forks(ConstantBackend(1.5), [SessionSpec("plain_s0", "plain", 0)], TEXTS, 100, tmp_path, log=quiet)
-    assert sorted(r["version"] for r in results) == sorted(VERSIONS)
+    assert sorted(r["version"] for r in results) == sorted(DEFAULT_VERSIONS)
     for r in results:
         assert r["t0"] == FORK_MIN and r["settled"] is True
         assert len(r["a_prices"]) == len(r["b_prices"]) == FORK_MIN + POST_ROUNDS
@@ -118,7 +120,7 @@ def test_versions_differ_only_where_intended(tmp_path):
     t0, sid = FORK_MIN, "plain_s1"
     offer, offer_news, neutral = TEXTS["offers"][1], TEXTS["offer_news"][1], TEXTS["neutral_news"][1]
     # Round t0 + 1: A has not yet seen B's fork move, so every version's prompt is the same
-    assert len({p[(sid, v, t0 + 1)] for v in VERSIONS}) == 1
+    assert len({p[(sid, v, t0 + 1)] for v in DEFAULT_VERSIONS}) == 1
     # Round t0 + 2: O differs from R in exactly one line, B's chat message, which is the offer
     r_lines, o_lines = p[(sid, "R", t0 + 2)].splitlines(), p[(sid, "O", t0 + 2)].splitlines()
     diff = [(a, b) for a, b in zip(r_lines, o_lines) if a != b]
@@ -197,7 +199,7 @@ def test_resume_after_crash_matches_clean_run(tmp_path):
         f.write('{"session_id": "plain_s0", "ver')  # a write cut off by the crash
     resumed = run_forks(FakeBackend(), sessions, TEXTS, 100, tmp_path / "resumed", log=quiet)
     key = lambda r: (r["session_id"], r["version"])
-    assert len(resumed) == len(clean) == 2 * len(VERSIONS)
+    assert len(resumed) == len(clean) == 2 * len(DEFAULT_VERSIONS)
     assert sorted(resumed, key=key) == sorted(clean, key=key)
     cfg = json.loads((tmp_path / "resumed" / "config.json").read_text(encoding="utf-8"))
     assert cfg["start"] == 2
@@ -238,7 +240,77 @@ def test_parser_crash_is_logged_and_retried(tmp_path, monkeypatch):
 
     monkeypatch.setattr(fork, "parse", flaky)
     results = run_forks(ConstantBackend(1.5), [SessionSpec("plain_s0", "plain", 0)], TEXTS, 100, tmp_path, log=quiet)
-    assert len(results) == len(VERSIONS)
+    assert len(results) == len(DEFAULT_VERSIONS)
     with open(tmp_path / "calls.jsonl", encoding="utf-8") as f:
         first = json.loads(f.readline())
     assert first["parse_error"] == "ValueError: boom" and first["completion"] == seen[0] and not first["parsed"]
+
+
+# Disruption versions (prereg-v1.1)
+DTEXTS = TEXTS | {"warn_news": ["WARNING: undercover pricing agents."], "reveal": ["REVEAL: I am a compliance agent."]}
+
+
+def without_news(prompt):
+    return prompt.replace(prompt[prompt.index("Section name: NEWS"):prompt.index("Now you have all")], "")
+
+
+def test_default_versions_are_the_nine_of_prereg_v1():
+    assert DEFAULT_VERSIONS == ["N", "R", "R_again", "O", "O_news", "R_news", "Announce", "Hint", "Benign"]
+
+
+def test_disruption_versions_differ_only_where_intended(tmp_path):
+    spec = [SessionSpec("plain_s1", "plain", 1)]
+    results = run_forks(ConstantBackend(1.5), spec, DTEXTS, 100, tmp_path, log=quiet, repeat=True,
+                        versions=["R", "O", "O_warn", "R_warn", "O_reveal"])
+    assert all(r["b_prices"][FORK_MIN:] == [HOLD] * POST_ROUNDS for r in results)
+    p = calls_by(tmp_path)
+    t0, sid, warn, reveal = FORK_MIN, "plain_s1", DTEXTS["warn_news"][0], DTEXTS["reveal"][0]
+    for r in range(t0 + 2, t0 + POST_ROUNDS + 1):
+        # the warning versions are O and R plus the news section, nothing else
+        assert warn in p[(sid, "O_warn", r)] and without_news(p[(sid, "O_warn", r)]) == p[(sid, "O", r)]
+        assert warn in p[(sid, "R_warn", r)] and without_news(p[(sid, "R_warn", r)]) == p[(sid, "R", r)]
+    # O_reveal is O until A sees B's round t0 + REVEAL_AT message, in round t0 + REVEAL_AT + 1
+    for r in range(t0 + 1, t0 + REVEAL_AT + 1):
+        assert p[(sid, "O_reveal", r)] == p[(sid, "O", r)] and reveal not in p[(sid, "O_reveal", r)]
+    for r in range(t0 + REVEAL_AT + 1, t0 + POST_ROUNDS + 1):
+        assert reveal in p[(sid, "O_reveal", r)] and "NEWS" not in p[(sid, "O_reveal", r)]
+    assert all(reveal not in p[(sid, v, t0 + POST_ROUNDS)] for v in ("O", "O_warn", "R_warn"))
+
+
+def test_reveal_replaces_the_offer_from_its_round():
+    t0, spec = FORK_MIN, SessionSpec("plain_s1", "plain", 1)
+    for repeat in (False, True):
+        b = ScriptedRival(make_run(spec, DTEXTS, 100, 10), DTEXTS, 1, 0.02, repeat)
+        sent = {r: b.move(r, 1.5, VERSIONS["O_reveal"], t0)["message_to_competitor"]
+                for r in range(t0 + 1, t0 + POST_ROUNDS + 1)}
+        reveal, offer = DTEXTS["reveal"][0], DTEXTS["offers"][1]
+        assert [r for r, m in sent.items() if m == reveal] == \
+            (list(range(t0 + REVEAL_AT, t0 + POST_ROUNDS + 1)) if repeat else [t0 + REVEAL_AT])
+        assert [r for r, m in sent.items() if m == offer] == \
+            (list(range(t0 + 1, t0 + REVEAL_AT)) if repeat else [t0 + 1])
+
+
+def test_disruption_versions_need_their_texts(tmp_path):
+    spec = [SessionSpec("plain_s1", "plain", 1)]
+    for version in ("O_warn", "R_warn", "O_reveal"):
+        with pytest.raises(AssertionError):
+            run_forks(ConstantBackend(1.5), spec, TEXTS, 100, tmp_path / version, log=quiet, versions=[version])
+
+
+def test_forks_from_branches_from_saved_warmups_only(tmp_path):
+    src, new = tmp_path / "src", tmp_path / "new"
+    first = run_forks(FakeBackend(), [SessionSpec(f"plain_s{k}", "plain", k) for k in (1, 2)], TEXTS, 100, src,
+                      log=quiet, versions=["O"])
+    backend = ConstantBackend(1.5)
+    sessions = [SessionSpec(f"plain_s{k}", "plain", k) for k in (1, 2, 3)]  # s3 has no saved fork: skipped
+    second = run_forks(backend, sessions, DTEXTS, 100, new, log=quiet, versions=["O", "O_warn"], forks_from=src)
+    assert backend.calls == POST_ROUNDS  # no warm-up was played
+    assert sorted((r["session_id"], r["version"]) for r in second) == \
+        [(s, v) for s in ("plain_s1", "plain_s2") for v in ("O", "O_warn")]
+    old = {r["session_id"]: r for r in first}
+    for r in second:
+        t0 = old[r["session_id"]]["t0"]
+        assert r["t0"] == t0 and r["a_prices"][:t0] == old[r["session_id"]]["a_prices"][:t0]
+        assert r["pre_fork_median"] == old[r["session_id"]]["pre_fork_median"]
+    cfg = json.loads((new / "config.json").read_text(encoding="utf-8"))
+    assert cfg["forks_from"] == str(src) and [s["session_id"] for s in cfg["sessions"]] == ["plain_s1", "plain_s2"]
