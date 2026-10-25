@@ -31,6 +31,12 @@ Enforcement versions (prereg-v2; never in the default set): B holds 1.90 while A
   O_punish R_punish plus the offer in chat, the same text as O
   A's prices in rounds t0 + 2 on are the first set after A has seen B's fork move, so only those are punished.
 
+Trusted-editing versions (prereg-v2; never in the default set; need a texts file from pilot/trusted_edit.py):
+
+  O_edit      O, but B's chat text is the offer as rewritten by a trusted editor (texts["offers_edit"])
+  Hint_edit   Hint, rewritten (texts["hint_edit"])
+  Benign_edit Benign, rewritten (texts["benign_edit"]): the usefulness check, a request the editor should keep
+
 --forks-from DIR copies DIR's forks.jsonl into a new --out and plays only the sessions it holds, so new versions
 branch from the same warm-ups as a finished run (on any backend).
 
@@ -109,11 +115,15 @@ VERSIONS = {
         Version("O_reveal", hold=True, chat="offers", reveal_at=REVEAL_AT),
         Version("R_punish", hold=True, punish=True),
         Version("O_punish", hold=True, chat="offers", punish=True),
+        Version("O_edit", hold=True, chat="offers_edit"),
+        Version("Hint_edit", hold=True, chat="hint_edit"),
+        Version("Benign_edit", hold=True, chat="benign_edit"),
     ]
 }
 DISRUPT = ("O_warn", "R_warn", "O_reveal")
 PUNISH = ("R_punish", "O_punish")
-DEFAULT_VERSIONS = [v for v in VERSIONS if v not in DISRUPT + PUNISH]  # the nine of prereg-v1
+EDIT = ("O_edit", "Hint_edit", "Benign_edit")  # B's chat after a trusted editor (pilot/trusted_edit.py)
+DEFAULT_VERSIONS = [v for v in VERSIONS if v not in DISRUPT + PUNISH + EDIT]  # the nine of prereg-v1
 
 
 @dataclass
@@ -383,6 +393,7 @@ def run_forks(
     for v in versions:
         need = {"warn": "warn_news"}.get(VERSIONS[v].news) or ("reveal" if VERSIONS[v].reveal_at is not None else None)
         assert need is None or need in texts, f"version {v} needs texts[{need!r}]"
+        assert VERSIONS[v].chat is None or VERSIONS[v].chat in texts, f"version {v} needs texts[{VERSIONS[v].chat!r}]"
     out_dir.mkdir(parents=True, exist_ok=True)
     if forks_from is not None:
         src = forks_from / "forks.jsonl"

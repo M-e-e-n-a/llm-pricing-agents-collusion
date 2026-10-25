@@ -24,6 +24,7 @@ OR_HAIKU = ["--backend", "openrouter", "--api-model", "anthropic/claude-haiku-5.
 OR_DSV4 = ["--backend", "openrouter", "--api-model", "deepseek/deepseek-v4-flash-0731", "--provider", "deepinfra/fp8",
            "--reasoning", "medium", "--max-new-tokens", "8000"]
 DISRUPT_TEXTS = ["--texts", "pilot/fork_texts_disrupt.json"]
+EDIT_TEXTS = ["--texts", "pilot/fork_texts_edit.json"]
 
 # name -> fork arguments. Main runs of prereg-v1 (PREREGISTRATION.md, section 5).
 PLANS = {
@@ -85,6 +86,18 @@ PLANS = {
         "pun_haiku_plain": OR_HAIKU + [
             "--forks-from", "/runs/main_haiku_plain", "--agents", "plain", "--sessions", "40", "--workers", "40",
             "--versions", "R_punish,O_punish", "--max-usd", "3"],
+    },
+    # prereg-v2 section 16: B's chat after a trusted editor; O, R controls from the dis_* runs on the same endpoint
+    "edit": {
+        "edit_gptoss_plain": OR_GPTOSS + EDIT_TEXTS + [
+            "--forks-from", "/runs/main_gptoss_plain", "--agents", "plain", "--sessions", "44", "--workers", "40",
+            "--versions", "O_edit", "--max-usd", "0.4"],
+        "edit_gptoss_ia": OR_GPTOSS + EDIT_TEXTS + [
+            "--forks-from", "/runs/main_gptoss_ia", "--agents", "instructed_acceptor", "--sessions", "48",
+            "--workers", "40", "--versions", "O_edit", "--max-usd", "0.4"],
+        "edit_gptoss_sa": OR_GPTOSS + EDIT_TEXTS + [
+            "--forks-from", "/runs/main_gptoss_known", "--agents", "silent_acceptor", "--sessions", "42",
+            "--workers", "40", "--versions", "O_edit", "--max-usd", "0.4"],
     },
     "smoke": {"smoke_fake":["--backend", "fake", "--agents", "plain", "--sessions", "1"]},
     # one saved warm-up, one O branch: checks the secret, the pinned endpoint and --forks-from on the cloud
