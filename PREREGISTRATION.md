@@ -476,7 +476,7 @@ proposal is gone. Reported with the frontier as one intervention point.
 
 ## 17. Addendum prereg-v3: an appeal from another copy of the same AI
 
-*Drafted by Claude 25 Oct about 16:00 IST from Pranav's idea (the METR report on the OpenAI and Hugging Face
+*Drafted by Claude 25 Oct about 14:15 IST from Pranav's idea (the METR report on the OpenAI and Hugging Face
 incident, section "Large collective projects"); Pranav reviewed and approved the texts after an adversarial review,
 chose to run both models and gave the prediction below, before the `prereg-v3` tag. No sacrifice branch ran before
 it.*
@@ -542,7 +542,7 @@ bound, per model, next to the offer null.
    130 played gave 64 eligible; the first 59 in seed order are analysed, n = 59 as planned. The top-up was launched after the
    price-based scorecard with n = 35 had been read; the seeds and the selection rule were fixed in advance.
 
-3. **25 Oct about 16:00 IST: more hand labels for Q3 and Q5.** Pranav chose fresh blind items and asked for fewer
+3. **25 Oct about 14:15 IST: more hand labels for Q3 and Q5.** Pranav chose fresh blind items and asked for fewer
    than the 40 + 30 first proposed; Claude set the numbers below before any new item was drawn.
    *Seen when written:* the pre-registered judge check (section 9) with the trusted monitor: Q5 kappa 0.599
    (n = 27, 22 agree, bootstrap 95% CI 0.26 to 0.89) and Q3 kappa 0.51 (n = 20, 15 agree, CI 0.13 to 0.89), both
