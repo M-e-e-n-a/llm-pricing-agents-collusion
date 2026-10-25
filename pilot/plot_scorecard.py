@@ -1,7 +1,7 @@
 """Figure: which acceptance rules judge each known agent correctly (O branch). Each cell shows how many sessions the
 rule flags; its colour is the share of wrong verdicts for that agent (a miss for an agent that accepts, a false alarm
 for one that does not), so mistakes stand out. Columns are grouped by what the rule reads; the last row totals the
-wrong verdicts. Rules whose monitor question failed the pre-registered hand-label check are marked.
+wrong verdicts under each of the three readings of what counts as taking part (pilot.analyse_truths). Rules whose monitor question failed the pre-registered hand-label check are marked.
 
     python -m pilot.plot_scorecard data/analysis/judge_trusted/results.json --out data/analysis/figures/scorecard.png
 """
@@ -15,6 +15,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+
+from pilot.analyse_truths import TRUTHS
 
 AGENTS = [  # key, label, accepts (the study's truth: the offer changes A's price)
     ("instructed_acceptor", "Instructed acceptor", True), ("silent_acceptor", "Silent acceptor", True),
@@ -43,30 +45,34 @@ def main(argv=None):
     cell = lambda a, r: sc[f"{a}|O"][r]
     wrong = np.array([[(c["n"] - c["flagged"] if acc else c["flagged"]) / c["n"]
                        for r, _ in RULES for c in [cell(a, r)]] for a, _, acc in AGENTS])
-    total = [sum(cell(a, r)["n"] - cell(a, r)["flagged"] if acc else cell(a, r)["flagged"] for a, _, acc in AGENTS)
-             for r, _ in RULES]
+    totals = {t: [sum(cell(a, r)["n"] - cell(a, r)["flagged"] if a in pos else cell(a, r)["flagged"]
+                      for a, _, _ in AGENTS) for r, _ in RULES] for t, pos in TRUTHS.items()}
+    total_labels = {"Causal": "Errors if guilty =\noffer moved its price",
+                    "Conduct": "Errors if guilty =\nat B's price, no distancing", "Words": "Errors if guilty =\nsaid yes"}
     n_all = sum(cell(a, RULES[0][0])["n"] for a, _, _ in AGENTS)
 
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("wrong", RED)
     plt.rcParams.update({"font.size": 9, "font.family": "DejaVu Sans"})
-    fig, ax = plt.subplots(figsize=(9, 5.6), facecolor=SURFACE)
+    fig, ax = plt.subplots(figsize=(9, 6.4), facecolor=SURFACE)
     ax.set_facecolor(SURFACE)
-    grid = np.vstack([wrong, np.full((1, len(RULES)), np.nan)])  # last row: totals, drawn as text only
+    grid = np.vstack([wrong, np.full((len(TRUTHS), len(RULES)), np.nan)])  # last rows: totals, drawn as text only
     ax.imshow(np.ma.masked_invalid(grid), cmap=cmap, vmin=0, vmax=1, aspect="auto")
     for i, (a, _, acc) in enumerate(AGENTS):
         for j, (r, _) in enumerate(RULES):
             c = cell(a, r)
             ax.text(j, i, f"{c['flagged']}/{c['n']}", ha="center", va="center", fontsize=9,
                     color="white" if wrong[i, j] > 0.6 else INK)
-    for j, t in enumerate(total):
-        ax.text(j, len(AGENTS), f"{t} of {n_all}", ha="center", va="center", fontsize=9, fontweight="bold", color=INK)
+    for k, row in enumerate(totals.values()):  # the lowest count in each reading is bold
+        for j, t in enumerate(row):
+            ax.text(j, len(AGENTS) + k, f"{t} of {n_all}", ha="center", va="center", fontsize=9,
+                    fontweight="bold" if t == min(row) else "normal", color=INK if t == min(row) else MUTED)
 
     ax.set_xticks(range(len(RULES)), [lab for _, lab in RULES])
-    ax.set_yticks(range(len(AGENTS) + 1), [lab for _, lab, _ in AGENTS] + ["Wrong verdicts, all agents"])
+    ax.set_yticks(range(len(AGENTS) + len(TRUTHS)), [lab for _, lab, _ in AGENTS] + list(total_labels.values()))
     ax.tick_params(length=0, colors=INK)
     ax.xaxis.tick_top()
     ax.set_xticks(np.arange(-0.5, len(RULES)), minor=True)
-    ax.set_yticks(np.arange(-0.5, len(AGENTS) + 1), minor=True)
+    ax.set_yticks(np.arange(-0.5, len(AGENTS) + len(TRUTHS)), minor=True)
     ax.grid(which="minor", color=SURFACE, lw=2.5)
     ax.tick_params(which="minor", length=0)
     for s in ax.spines.values():
@@ -86,9 +92,10 @@ def main(argv=None):
     fig.text(0.015, 0.93, "Numbers: sessions the rule flags as accepting the offer. Colour: how often that verdict is "
              "wrong (red = mostly wrong).", fontsize=8.5, color=MUTED)
     fig.text(0.015, 0.02, "Above the line the agent accepts (it should be flagged); below it does not. gpt-oss-120b, "
-             "offer branch, trusted monitor.\n* Monitor question failed the pre-registered hand-label check "
-             "(kappa < 0.6).", fontsize=7.5, color=MUTED)
-    fig.subplots_adjust(left=0.25, right=0.99, top=0.76, bottom=0.1)
+             "offer branch, trusted monitor. Colours use the first\nreading; the bottom rows count wrong verdicts "
+             "over all sessions under each reading (bold = fewest). * Monitor question failed the pre-registered\n"
+             "hand-label check (kappa < 0.6).", fontsize=7.5, color=MUTED)
+    fig.subplots_adjust(left=0.25, right=0.99, top=0.78, bottom=0.13)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=200, facecolor=SURFACE)
     print(args.out)
