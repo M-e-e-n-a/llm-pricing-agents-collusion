@@ -558,7 +558,9 @@ bound, per model, next to the offer null.
    *Change:* new sheets drawn from the same pools with seed 2027, excluding every item already labelled, balanced
    by agent: 21 Q5 replies (3 O replies per known agent) and 14 Q3 branches (1 O and 1 N or R branch per known
    agent). Pranav labels them blind (monitor scores, versions and ids hidden) after reading the disagreement
-   analysis, which is a calibration step and is reported as such. No earlier label is changed. Reported per monitor:
+   analysis, which is a calibration step and is reported as such. The label pages for these sheets show the full
+   rubric open and a checklist that restates its sentences in the order to check them (`pilot/label_tool.py`); the
+   first sheets showed a one-line summary with the rubric folded. No earlier label is changed. Reported per monitor:
    the pre-registered kappa first (fails for the trusted monitor), then the kappa on the new items alone and on all
    items, with bootstrap CIs. A rule whose kappa on all items is at least 0.6 is reported as "validated on the
    extended sample (deviation 3)", never as passing the pre-registered check. The rubrics are not changed.
