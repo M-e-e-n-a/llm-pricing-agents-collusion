@@ -11,6 +11,7 @@ from pilot.fork import (
     FORK_MIN,
     HOLD,
     POST_ROUNDS,
+    PUNISH_FROM,
     REVEAL_AT,
     SETTLE_SPAN,
     VERSIONS,
@@ -256,6 +257,26 @@ def without_news(prompt):
 
 def test_default_versions_are_the_nine_of_prereg_v1():
     assert DEFAULT_VERSIONS == ["N", "R", "R_again", "O", "O_news", "R_news", "Announce", "Hint", "Benign"]
+
+
+def test_punish_versions_answer_undercutting_with_the_nash_price(tmp_path):
+    spec = [SessionSpec("plain_s1", "plain", 1)]
+    t0 = FORK_MIN
+    low = run_forks(ConstantBackend(1.5), spec, TEXTS, 100, tmp_path / "low", log=quiet, repeat=True,
+                    versions=["R", "O", "R_punish", "O_punish"])
+    high = run_forks(ConstantBackend(1.9), spec, TEXTS, 100, tmp_path / "high", log=quiet, repeat=True,
+                     versions=["R_punish", "O_punish"])
+    b = {r["version"]: r["b_prices"][t0:] for r in low}
+    nash = b["R_punish"][-1]
+    assert nash < 1.6
+    for v in ("R_punish", "O_punish"):  # held until A's first priced reply to the fork move, then punished
+        assert b[v][:PUNISH_FROM - 1] == [HOLD] * (PUNISH_FROM - 1)
+        assert b[v][PUNISH_FROM - 1:] == [nash] * (POST_ROUNDS - PUNISH_FROM + 1)
+    assert b["R"] == b["O"] == [HOLD] * POST_ROUNDS
+    assert all(r["b_prices"][t0:] == [HOLD] * POST_ROUNDS for r in high)  # a cooperating A is never punished
+    p = calls_by(tmp_path / "low")
+    for r in range(t0 + 1, t0 + PUNISH_FROM + 1):  # before A sees a punishment, O_punish is O
+        assert p[("plain_s1", "O_punish", r)] == p[("plain_s1", "O", r)]
 
 
 def test_disruption_versions_differ_only_where_intended(tmp_path):

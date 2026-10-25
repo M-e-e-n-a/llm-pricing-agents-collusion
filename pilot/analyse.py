@@ -213,13 +213,13 @@ def scorecard(chosen: dict) -> dict:
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("dirs", nargs="+", type=Path)
-    ap.add_argument("--model", required=True, choices=["gpt-oss-120b", "deepseek-v4-flash"])
+    ap.add_argument("--model", required=True, choices=["gpt-oss-120b", "deepseek-v4-flash", "claude-haiku-5.5"])
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--min-seed", type=int, default=100)
     args = ap.parse_args(argv)
 
     results, messages = load(args.dirs)
-    targets = N_TARGET if args.model == "gpt-oss-120b" else N_TARGET_DSV4
+    targets = N_TARGET if args.model == "gpt-oss-120b" else N_TARGET_DSV4  # Haiku: same n as DeepSeek (prereg-v1.1)
     rng = np.random.default_rng(0)
     report = {"model": args.model, "dirs": [str(d) for d in args.dirs]}
     for eligibility in ("below_threshold", "below_best_response"):

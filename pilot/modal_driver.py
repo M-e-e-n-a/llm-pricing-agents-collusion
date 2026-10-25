@@ -70,7 +70,23 @@ PLANS = {
         "main_haiku_ia": OR_HAIKU + ["--agents", "instructed_acceptor", "--sessions", "14", "--workers", "14",
                                      "--versions", "N,R,O", "--max-usd", "2"],
     },
-    "smoke": {"smoke_fake": ["--backend", "fake", "--agents", "plain", "--sessions", "1"]},
+    # section 5: the follower reached 35 eligible of 59 in 74 sessions, under its cap of 130; the next seeds in
+    # order (174 to 229, to the cap) on the same vLLM server as the main runs
+    "follower_topup": {
+        "main_gptoss_follower2": GPTOSS + ["--agents", "follower", "--sessions", "56", "--first-seed", "174",
+                                           "--workers", "56", "--versions", "N,R,O"],
+    },
+    # prereg-v2 section 14: B punishes undercutting, plain agent, from the same saved warm-ups as the disruption
+    # and Haiku runs, whose R and O branches are the matched controls on the same endpoint
+    "punish": {
+        "pun_gptoss_plain": OR_GPTOSS + [
+            "--forks-from", "/runs/main_gptoss_plain", "--agents", "plain", "--sessions", "44", "--workers", "40",
+            "--versions", "R_punish,O_punish", "--max-usd", "1.5"],
+        "pun_haiku_plain": OR_HAIKU + [
+            "--forks-from", "/runs/main_haiku_plain", "--agents", "plain", "--sessions", "40", "--workers", "40",
+            "--versions", "R_punish,O_punish", "--max-usd", "3"],
+    },
+    "smoke": {"smoke_fake":["--backend", "fake", "--agents", "plain", "--sessions", "1"]},
     # one saved warm-up, one O branch: checks the secret, the pinned endpoint and --forks-from on the cloud
     "smoke_or": {"smoke_or_gptoss": OR_GPTOSS + ["--forks-from", "/runs/main_gptoss_ia", "--agents",
                                                  "instructed_acceptor", "--sessions", "1", "--workers", "1",
@@ -95,7 +111,7 @@ def fork_run(name: str, args: list[str]) -> int:
     import sys
 
     out = f"/runs/{name}"
-    cmd = [sys.executable, "-u", "-m", "pilot.fork", *args, *COMMON, "--out", out]
+    cmd = [sys.executable, "-u", "-m", "pilot.fork", *COMMON, *args, "--out", out]  # a plan's own flags win
     print(name, " ".join(cmd))
     subprocess.run(["mkdir", "-p", out], check=True)
     with open(f"{out}/driver.log", "a", encoding="utf-8") as log:
