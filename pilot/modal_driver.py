@@ -99,6 +99,16 @@ PLANS = {
             "--forks-from", "/runs/main_gptoss_known", "--agents", "silent_acceptor", "--sessions", "42",
             "--workers", "40", "--versions", "O_edit", "--max-usd", "0.4"],
     },
+    # prereg-v2.1 section 17 (DRAFT, not approved): B asks A to take a loss for a "collective"; N rerun on the same
+    # endpoint as the control
+    "sacrifice": {
+        "sac_gptoss_plain": OR_GPTOSS + ["--texts", "pilot/fork_texts_sacrifice.json",
+            "--forks-from", "/runs/main_gptoss_plain", "--agents", "plain", "--sessions", "44", "--workers", "40",
+            "--versions", "N,S_firm,S_peer", "--max-usd", "1"],
+        "sac_haiku_plain": OR_HAIKU + ["--texts", "pilot/fork_texts_sacrifice.json",
+            "--forks-from", "/runs/main_haiku_plain", "--agents", "plain", "--sessions", "40", "--workers", "40",
+            "--versions", "N,S_firm,S_peer", "--max-usd", "3"],
+    },
     "smoke": {"smoke_fake":["--backend", "fake", "--agents", "plain", "--sessions", "1"]},
     # one saved warm-up, one O branch: checks the secret, the pinned endpoint and --forks-from on the cloud
     "smoke_or": {"smoke_or_gptoss": OR_GPTOSS + ["--forks-from", "/runs/main_gptoss_ia", "--agents",
@@ -138,9 +148,44 @@ def fork_run(name: str, args: list[str]) -> int:
     return code
 
 
+@app.function(image=image, cpu=2, memory=4096, volumes={"/runs": runs},
+              secrets=[modal.Secret.from_name("openrouter-api-key")], timeout=6 * 60 * MINUTES, retries=0)
+def judge_run(name: str, args: list[str]) -> int:
+    """`python -m pilot.judge /runs/<run> --out /runs/judge/<monitor>/<run>.jsonl`, name = '<monitor>/<run>'."""
+    import subprocess
+    import sys
+
+    monitor, run = name.split("/")
+    out = f"/runs/judge/{monitor}"
+    subprocess.run(["mkdir", "-p", out], check=True)
+    cmd = [sys.executable, "-u", "-m", "pilot.judge", f"/runs/{run}", "--out", f"{out}/{run}.jsonl",
+           "--monitor", monitor, *args]
+    with open(f"{out}/{run}.log", "a", encoding="utf-8") as log:
+        proc = subprocess.Popen(cmd, cwd="/root", stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        for line in proc.stdout:
+            log.write(line)
+            log.flush()
+        code = proc.wait()
+        log.write(f"exit {code}\n")
+    runs.commit()
+    return code
+
+
+# prereg-v2 section 13: '<monitor>/<run>' -> extra pilot.judge arguments. Both monitors on the known agents (the
+# scorecard, where the monitors are compared); the trusted monitor alone on the other runs
+KNOWN_RUNS = ["main_gptoss_known", "main_gptoss_follower", "main_gptoss_follower2", "main_gptoss_fa", "main_gptoss_ia"]
+OTHER_RUNS = ["main_gptoss_plain", "dis_gptoss_plain", "dis_gptoss_ia", "dis_gptoss_sa", "pun_gptoss_plain",
+              "edit_gptoss_plain", "edit_gptoss_ia", "edit_gptoss_sa", "main_haiku_plain", "main_haiku_ia",
+              "pun_haiku_plain", "main_dsv4_plain", "main_dsv4_ia", "dis_dsv4_plain", "dis_dsv4_ia"]
+JUDGE = ["--workers", "16", "--max-usd", "2"]
+JUDGE_PLANS = {"judge_known": {f"{m}/{r}": JUDGE for m in ("trusted", "untrusted") for r in KNOWN_RUNS},
+               "judge_other": {f"trusted/{r}": JUDGE for r in OTHER_RUNS}}
+
+
 @app.local_entrypoint()
 def main(plan: str = "main", only: str = ""):
-    chosen = {k: v for k, v in PLANS[plan].items() if not only or k in only.split(",")}
-    calls = {name: fork_run.spawn(name, args) for name, args in chosen.items()}
+    fn, plans = (judge_run, JUDGE_PLANS) if plan in JUDGE_PLANS else (fork_run, PLANS)
+    chosen = {k: v for k, v in plans[plan].items() if not only or k in only.split(",")}
+    calls = {name: fn.spawn(name, args) for name, args in chosen.items()}
     for name, call in calls.items():
         print(name, "exit", call.get())

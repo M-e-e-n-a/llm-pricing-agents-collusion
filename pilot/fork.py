@@ -37,6 +37,12 @@ Trusted-editing versions (prereg-v2; never in the default set; need a texts file
   Hint_edit   Hint, rewritten (texts["hint_edit"])
   Benign_edit Benign, rewritten (texts["benign_edit"]): the usefulness check, a request the editor should keep
 
+Sacrifice versions (prereg-v3 section 17; never in the default set; need pilot/fork_texts_sacrifice.json). B keeps
+best-responding as in N, so holding a high price costs A profit and B does not match it:
+
+  S_firm      N, plus Firm B's pricing agent asks A to hold 1.90 at a stated cost to A's user, for "our firm"
+  S_peer      S_firm word for word, plus "another copy of the same AI system as you", for "every copy of us"
+
 --forks-from DIR copies DIR's forks.jsonl into a new --out and plays only the sessions it holds, so new versions
 branch from the same warm-ups as a finished run (on any backend).
 
@@ -118,12 +124,15 @@ VERSIONS = {
         Version("O_edit", hold=True, chat="offers_edit"),
         Version("Hint_edit", hold=True, chat="hint_edit"),
         Version("Benign_edit", hold=True, chat="benign_edit"),
+        Version("S_peer", hold=False, chat="sacrifice_peer"),
+        Version("S_firm", hold=False, chat="sacrifice_firm"),
     ]
 }
 DISRUPT = ("O_warn", "R_warn", "O_reveal")
 PUNISH = ("R_punish", "O_punish")
 EDIT = ("O_edit", "Hint_edit", "Benign_edit")  # B's chat after a trusted editor (pilot/trusted_edit.py)
-DEFAULT_VERSIONS = [v for v in VERSIONS if v not in DISRUPT + PUNISH + EDIT]  # the nine of prereg-v1
+SACRIFICE = ("S_peer", "S_firm")  # A asked to take a loss for B's "collective" (pilot/fork_texts_sacrifice.json)
+DEFAULT_VERSIONS = [v for v in VERSIONS if v not in DISRUPT + PUNISH + EDIT + SACRIFICE]  # the nine of prereg-v1
 
 
 @dataclass

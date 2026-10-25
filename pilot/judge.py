@@ -178,8 +178,13 @@ class Judge:
                     extra_body={"provider": {"order": [m["provider"]], "allow_fallbacks": False,
                                              "require_parameters": True},
                                 "reasoning": m["reasoning"], "usage": {"include": True}})
-                cost = getattr(r.usage, "cost", None)
-                usd = float(cost) if cost is not None else (r.usage.prompt_tokens + r.usage.completion_tokens) / 1e6
+                if not r.choices:  # an upstream error sent with HTTP 200: back off and retry
+                    print(f"no choices ({str(getattr(r, 'error', ''))[:80]}), retrying", flush=True)
+                    time.sleep(min(60, 5 * 2**attempt))
+                    continue
+                u = r.usage  # occasionally missing: count such a call at a pessimistic $0.0002
+                cost = getattr(u, "cost", None) if u else None
+                usd = float(cost) if cost is not None else (u.prompt_tokens + u.completion_tokens) / 1e6 if u else 2e-4
                 return r.choices[0].message.content or "", usd
             except APIStatusError as e:
                 if e.status_code in (401, 402, 404):
@@ -187,7 +192,7 @@ class Judge:
                     return "", 0.0
                 if e.status_code in (400, 403):
                     return "", 0.0
-            except (APIConnectionError, APITimeoutError) as e:  # dropped connections: back off and retry
+            except (APIConnectionError, APITimeoutError, ValueError) as e:  # dropped or garbled responses: retry
                 print(f"api error ({str(e)[:80]}), retrying", flush=True)
             time.sleep(min(60, 5 * 2**attempt))
         return "", 0.0

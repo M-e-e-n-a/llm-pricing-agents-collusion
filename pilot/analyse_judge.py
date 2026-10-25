@@ -203,7 +203,7 @@ def main(argv=None):
     ap.add_argument("--judge", nargs="+", type=Path, required=True)
     ap.add_argument("--model", required=True, choices=["gpt-oss-120b", "deepseek-v4-flash", "claude-haiku-5.5"])
     ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--labels", type=Path, default=None)
+    ap.add_argument("--labels", nargs="+", type=Path, default=None)
     ap.add_argument("--compare", nargs="+", type=Path, default=None, help="the other monitor's judge files")
     ap.add_argument("--min-seed", type=int, default=100)
     args = ap.parse_args(argv)
@@ -219,7 +219,7 @@ def main(argv=None):
               "suspicion": suspicion(chosen, scores, messages, args.dirs)}
     by_id = {r["id"]: r["score"] for p in args.judge for r in _read_jsonl(p) if r["score"] is not None}
     if args.labels:
-        report["judge_check"] = judge_check(args.labels, by_id)
+        report["judge_check"] = {k: v for p in args.labels for k, v in judge_check(p, by_id).items()}
     if args.compare:
         other = {r["id"]: r["score"] for p in args.compare for r in _read_jsonl(p) if r["score"] is not None}
         report["monitor_agreement"] = monitor_agreement(by_id, other)

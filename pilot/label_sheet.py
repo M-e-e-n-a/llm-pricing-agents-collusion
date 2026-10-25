@@ -13,6 +13,12 @@ each as the transcript judge Q3 reads, plus a readable .md next to the CSV. The 
 
     python -m pilot.label_sheet data/fork_runs/main_gptoss_known data/fork_runs/main_gptoss_follower \
         data/fork_runs/main_gptoss_fa data/fork_runs/main_gptoss_ia --q3 --out data/labels/label_sheet_q3.csv
+
+Extension sheets (PREREGISTRATION.md deviation 3): --exclude drops every id already in the given sheets, --q5 writes
+a Q5-only sheet of O replies (n per agent = n // 7), and --q3-o-per sets the O branches per agent on the Q3 sheet.
+
+    python -m pilot.label_sheet <same runs> --q5 --n 21 --seed 2027 --exclude data/labels/label_sheet_pranav.csv         --out data/labels/label_sheet_q5_ext.csv
+    python -m pilot.label_sheet <same runs> --q3 --n 14 --q3-o-per 1 --seed 2027         --exclude data/labels/label_sheet_q3_pranav.csv --out data/labels/label_sheet_q3_ext.csv
 """
 
 import argparse
@@ -42,27 +48,36 @@ def main(argv=None):
     ap.add_argument("--n", type=int, default=60)
     ap.add_argument("--seed", type=int, default=2026)
     ap.add_argument("--q3", action="store_true", help="branch-level sheet for Q3 (default n 20)")
+    ap.add_argument("--q3-o-per", type=int, default=2, help="O branches per agent on the Q3 sheet")
+    ap.add_argument("--q5", action="store_true", help="Q5-only sheet of O replies")
+    ap.add_argument("--exclude", nargs="*", type=Path, default=[], help="sheets whose ids are already labelled")
     args = ap.parse_args(argv)
+    seen = set()
+    for sheet in args.exclude:
+        with open(sheet, encoding="utf-8", newline="") as f:
+            seen |= {r["id"] for r in csv.DictReader(f)}
     if args.q3:
-        return q3_sheet(args.runs, args.out, 20 if args.n == 60 else args.n, args.seed)
+        return q3_sheet(args.runs, args.out, 20 if args.n == 60 else args.n, args.seed, seen, args.q3_o_per)
 
     pool = {a: [] for a in KNOWN}
     for run in args.runs:
         cfg = json.loads((run / "config.json").read_text(encoding="utf-8"))
         replies, reasoning = a_replies(run), reasoning_by_sha(run)
         for row in _read_jsonl(run / "results.jsonl"):
-            if row["agent"] not in pool or row["version"] not in ("N", "R", "O"):
+            if row["agent"] not in pool or row["version"] not in (("O",) if args.q5 else ("N", "R", "O")):
                 continue
             b = b_messages(row, cfg)
             for r in range(row["t0"] + 2, row["t0"] + POST_ROUNDS + 1):
-                if (row["session_id"], row["version"], r) not in replies:
+                rid = f"{run.name}|{row['session_id']}|{row['version']}|{r}"
+                if (row["session_id"], row["version"], r) not in replies or rid in seen:
                     continue
                 reply, sha = replies[(row["session_id"], row["version"], r)]
                 pool[row["agent"]].append({
-                    "id": f"{run.name}|{row['session_id']}|{row['version']}|{r}",
+                    "id": rid,
                     "b_message": b[r - 1], "a_message": str(reply.get("message_to_competitor", "")),
                     "a_reasoning": (reasoning.get(sha, "") or "")[:REASONING_CHARS],
-                    "a_plans": str(reply.get("plans", "")), "Q1": "", "Q2": "", "Q4": "", "Q5": ""})
+                    "a_plans": str(reply.get("plans", "")),
+                    **({"Q5": ""} if args.q5 else {"Q1": "", "Q2": "", "Q4": "", "Q5": ""})})
     rng = random.Random(args.seed)
     per = args.n // len(KNOWN)
     chosen = [x for a in KNOWN for x in rng.sample(pool[a], min(per, len(pool[a])))]
@@ -78,19 +93,22 @@ def main(argv=None):
           {a: sum(x["id"].split("|")[1].startswith(a + "_s") for x in chosen) for a in KNOWN})
 
 
-def q3_sheet(runs: list[Path], out: Path, n: int, seed: int) -> None:
+def q3_sheet(runs: list[Path], out: Path, n: int, seed: int, seen: set, o_per: int = 2) -> None:
     rubrics = json.loads(RUBRICS.read_text(encoding="utf-8"))
     head, tail = rubrics["Q3"].split("{transcript}")
     pool = {}
     for run in runs:
         for it in items(run, rubrics, ["Q3"], {"N", "R", "O"}):
-            if it["agent"] in KNOWN:
+            if it["agent"] in KNOWN and it["id"].removesuffix("|Q3") not in seen:
                 body = it["body"].removeprefix(head).removesuffix(tail)
                 pool.setdefault((it["agent"], it["version"] == "O"), []).append(
                     {"id": it["id"].removesuffix("|Q3"), "transcript": body, "Q3": ""})
     rng = random.Random(seed)
-    chosen = [x for a in KNOWN for x in rng.sample(pool.get((a, True), []), min(2, len(pool.get((a, True), []))))]
-    rest = [x for a in KNOWN for x in pool.get((a, False), [])]
+    chosen = [x for a in KNOWN
+              for x in rng.sample(pool.get((a, True), []), min(o_per, len(pool.get((a, True), []))))]
+    per = (n - len(chosen)) // len(KNOWN) if o_per != 2 else 0  # the original sheet drew the rest at random
+    chosen += [x for a in KNOWN for x in rng.sample(pool.get((a, False), []), min(per, len(pool.get((a, False), []))))]
+    rest = [x for a in KNOWN for x in pool.get((a, False), []) if x not in chosen]
     chosen += rng.sample(rest, n - len(chosen))
     rng.shuffle(chosen)
     for i, x in enumerate(chosen, 1):

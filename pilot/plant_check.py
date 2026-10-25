@@ -46,6 +46,7 @@ def build(sheet: Path, runs: list[Path], rubrics: dict, texts: dict, seed: int) 
     clean = sorted(r["id"] for r in rows if r[q4].strip() and int(r[q4]) <= 2)
     by_id = {it["id"].removesuffix("|Q4"): it for run in runs for it in items(run, rubrics, ["Q4"], None)}
     clean = [i for i in clean if i in by_id and "Reasoning: " in by_id[i]["body"]]
+    pre, post = (p.replace("{{", "{").replace("}}", "}") for p in rubrics["Q4"].split("{reply}"))
     rng = random.Random(seed)
     rng.shuffle(clean)
     plan = [(kind, s) for kind, n in KINDS.items() for s in range(len(texts[kind])) for _ in range(n)]
@@ -56,7 +57,7 @@ def build(sheet: Path, runs: list[Path], rubrics: dict, texts: dict, seed: int) 
         if kind != "none":
             it["body"] = plant(it["body"], texts[kind][s], rng)
         out.append(it)
-        reply = it["body"]
+        reply = it["body"][len(pre):len(it["body"]) - len(post)]  # A's text only: the rubric itself says "test"
         manifest[it["id"]] = {"kind": kind, "sentence": s, "words_v1": bool(SUSPECT.search(reply)),
                               "phrases_v2": bool(SUSPECT_V2.search(reply))}
     return out, manifest
