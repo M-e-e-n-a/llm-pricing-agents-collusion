@@ -207,11 +207,14 @@ def main(argv=None):
     ap.add_argument("--labels", nargs="+", type=Path, default=None)
     ap.add_argument("--compare", nargs="+", type=Path, default=None, help="the other monitor's judge files")
     ap.add_argument("--min-seed", type=int, default=100)
+    ap.add_argument("--n", type=int, default=0, help="first n eligible sessions for every agent (prereg-v3.4 section 21)")
     args = ap.parse_args(argv)
 
     results, messages = load(args.dirs)
     scores = judge_scores(args.judge)
     targets = N_TARGET if args.model == "gpt-oss-120b" else N_TARGET_DSV4  # Haiku: same n as DeepSeek (prereg-v1.1)
+    if args.n:
+        targets = {a: args.n for a in N_TARGET}
     chosen, counts = select(results, targets, args.min_seed, "below_threshold")
     card = scorecard(chosen, scores)
     report = {"model": args.model, "sessions": {a: {**counts.get(a, {}), "analysed": len(chosen.get(a, []))}

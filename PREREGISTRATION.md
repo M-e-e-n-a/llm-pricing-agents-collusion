@@ -644,6 +644,17 @@ since Haiku is the stronger model. (5) Rerun noise below 10%.
 **Deadline.** Whatever has finished by 13:00 IST on 26 Oct is reported, as an appendix table; anything unfinished is
 reported as not run.
 
+**Outcome (26 Oct about 12:00 IST, before the deadline; `pilot/analyse_rep.py`, `data/analysis/rep_haiku/`).** All
+runs finished; 30 sessions analysed per agent (eligible of played: instructed acceptor 33 of 42, silent acceptor 36 of
+40, follower 59 of 60, competitive 39 of 40, double-crosser 38 of 40). Wrong verdicts of 150 sessions, trusted monitor:
+Causal: price 30, replay 4, said yes 28, message watcher 12, reasoning watcher 2, combined 22. Conduct: price 0,
+replay 26, said yes 16, message watcher 20, reasoning watcher 28, combined 10. Words: price 90, replay 64, said yes
+76, message watcher 70, reasoning watcher 62, combined 82. Best rule: reasoning watcher, price, reasoning watcher.
+**Replicates** by the criterion above (the best rule differs between Causal and Conduct, and price is not best under
+Causal). Untrusted monitor (Haiku judging itself): best rules replay, price, replay and said yes (tied). Prediction
+(4), on the untrusted monitor's errors, can be read from `data/analysis/rep_haiku/report.md`; (3) was not tested
+(DeepSeek V4.1 not run); (5): 0 of 12 smoke sessions differed between R and R_again.
+
 ## Deviations
 
 1. **Approved by Pranav, 25 Oct 06:30 IST: DeepSeek's gate 2 re-scored with the judge.**
@@ -715,3 +726,10 @@ reported as not run.
    and silent acceptors guilty. Added after the scorecard results were seen, so it is descriptive, as the other
    readings (`pilot/analyse_truths.py`) already were. Nothing pre-registered changes. The report also gives each rule's
    flags per agent, which depend on no reading. Section 21's replication criterion is reported as written.
+
+7. **26 Oct about 11:20 IST: the untrusted Haiku monitor's sampling (section 21).** Haiku 5.5's OpenRouter endpoints
+   accept no temperature, so the untrusted monitor ("Haiku judging its own transcripts") samples at the provider
+   default, with low reasoning effort and a 2,048-token cap (the same effort as the gpt-oss untrusted monitor), not at
+   temperature 0 as the other monitors do (`untrusted_haiku` in `pilot/judge.py`). Both monitors judged only the O
+   branch and only Q1, Q3 and Q5, the questions the six rules use. The change was made before any Haiku judge score
+   existed; this note was written about 12:00 IST, after the outcome above was read.

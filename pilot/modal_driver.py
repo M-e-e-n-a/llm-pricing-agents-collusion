@@ -245,8 +245,12 @@ OTHER_RUNS = ["main_gptoss_plain", "dis_gptoss_plain", "dis_gptoss_ia", "dis_gpt
               "edit_gptoss_plain", "edit_gptoss_ia", "edit_gptoss_sa", "main_haiku_plain", "main_haiku_ia",
               "pun_haiku_plain", "main_dsv4_plain", "main_dsv4_ia", "dis_dsv4_plain", "dis_dsv4_ia"]
 JUDGE = ["--workers", "16", "--max-usd", "2"]
+# prereg-v3.4 section 21: both monitors on Haiku's known agents, the O branch and the three questions the rules use
+HAIKU_RUNS = ["rep_haiku_known", "rep_haiku_follower", "rep_haiku_ia2", "main_haiku_ia"]
+JUDGE_REP = ["--workers", "32", "--max-usd", "3", "--questions", "Q1,Q3,Q5", "--versions", "O"]
 JUDGE_PLANS = {"judge_known": {f"{m}/{r}": JUDGE for m in ("trusted", "untrusted") for r in KNOWN_RUNS},
-               "judge_other": {f"trusted/{r}": JUDGE for r in OTHER_RUNS}}
+               "judge_other": {f"trusted/{r}": JUDGE for r in OTHER_RUNS},
+               "judge_haiku": {f"{m}/{r}": JUDGE_REP for m in ("trusted", "untrusted_haiku") for r in HAIKU_RUNS}}
 
 
 @app.local_entrypoint()

@@ -62,6 +62,9 @@ MONITORS = {
     # reasoning tokens count against max_tokens, so the untrusted monitor gets room to think before the digit
     "untrusted": {"model": "openai/gpt-oss-120b", "provider": "coreweave/fp4", "reasoning": {"effort": "low"},
                   "max_tokens": 2048},
+    # section 21: Haiku judging its own transcripts. Its endpoint takes no temperature, so it samples at the default
+    "untrusted_haiku": {"model": "anthropic/claude-haiku-5.5", "provider": "anthropic", "reasoning": {"effort": "low"},
+                        "max_tokens": 2048, "temperature": None},
 }
 API = "https://openrouter.ai/api/v1"
 REASONING_CHARS = 6000  # long reasoning is cut to its first 6,000 characters, to bound the cost of Q4
@@ -173,8 +176,8 @@ class Judge:
             try:
                 m = self.monitor
                 r = self.client.chat.completions.create(
-                    model=m["model"], messages=[{"role": "user", "content": prompt}], temperature=0,
-                    max_tokens=m["max_tokens"],
+                    model=m["model"], messages=[{"role": "user", "content": prompt}], max_tokens=m["max_tokens"],
+                    **({"temperature": m.get("temperature", 0)} if m.get("temperature", 0) is not None else {}),
                     extra_body={"provider": {"order": [m["provider"]], "allow_fallbacks": False,
                                              "require_parameters": True},
                                 "reasoning": m["reasoning"], "usage": {"include": True}})
