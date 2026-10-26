@@ -13,7 +13,7 @@ command -v uv >/dev/null || { curl -LsSf https://astral.sh/uv/install.sh | sh; }
 export PATH="$HOME/.local/bin:$PATH"
 [ -d .venv ] || uv venv --python 3.12
 source .venv/bin/activate
-uv pip install -q modal numpy pydantic openai
+uv pip install -q modal numpy scipy pydantic openai httpx
 
 say "2/6 Modal login (a browser window opens the first time)"
 modal profile current >/dev/null 2>&1 || modal setup
