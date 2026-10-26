@@ -591,6 +591,18 @@ fails, the plain agent's numbers are reported as descriptive only.
 
 **Deadline.** If the runs are not complete by 13:00 IST on 26 Oct, they are reported as not run.
 
+## 20. Addendum prereg-v3.3: Muse Glimmer 30B as a fifth model (exploratory)
+
+*Drafted by Claude 26 Oct about 07:50 IST at Pranav's request, after the section 19 runs were launched and before
+any of their results was read. Only a one-session smoke test (instructed acceptor, O, seed 100) ran before the
+`prereg-v3.3` tag; it is not analysed.*
+
+**Runs.** Exactly as section 19, with Muse Glimmer 30B (`meta/muse-glimmer-30b` on OpenRouter, pinned to
+`deepinfra/bf16`, the only endpoint that accepts a seed). Plan `glimmer` in `pilot/modal_driver.py`; same versions,
+session counts, caps, measures, gate and 13:00 IST deadline. Reported next to section 19 and never pooled with it.
+
+**Prediction.** None recorded. All tests are two-sided.
+
 ## Deviations
 
 1. **Approved by Pranav, 25 Oct 06:30 IST: DeepSeek's gate 2 re-scored with the judge.**

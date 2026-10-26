@@ -26,6 +26,9 @@ OR_DSV4 = ["--backend", "openrouter", "--api-model", "deepseek/deepseek-v4-flash
 # GLM 5.3 Flash (26 Oct, exploratory fourth model): novita/fp8 is the cheapest fp8 endpoint that accepts a seed
 OR_GLM = ["--backend", "openrouter", "--api-model", "z-ai/glm-5.3-flash", "--provider", "novita/fp8",
           "--reasoning", "medium", "--max-new-tokens", "4000"]
+# Muse Glimmer 30B (26 Oct, exploratory fifth model): deepinfra/bf16 is the only endpoint that accepts a seed
+OR_GLIMMER = ["--backend", "openrouter", "--api-model", "meta/muse-glimmer-30b", "--provider", "deepinfra/bf16",
+              "--reasoning", "medium", "--max-new-tokens", "4000"]
 DISRUPT_TEXTS = ["--texts", "pilot/fork_texts_disrupt.json"]
 EDIT_TEXTS = ["--texts", "pilot/fork_texts_edit.json"]
 
@@ -129,7 +132,13 @@ PLANS = {
         "main_glm_ia": OR_GLM + ["--agents", "instructed_acceptor", "--sessions", "14", "--workers", "14",
                                  "--versions", "N,R,O", "--max-usd", "2"],
     },
-    "smoke_or": {"smoke_or_gptoss": OR_GPTOSS + ["--forks-from", "/runs/main_gptoss_ia", "--agents",
+    "glimmer": {
+        "main_glimmer_plain": OR_GLIMMER + ["--agents", "plain", "--sessions", "40", "--workers", "40",
+                                            "--versions", "N,R,R_again,O", "--max-usd", "5"],
+        "main_glimmer_ia": OR_GLIMMER + ["--agents", "instructed_acceptor", "--sessions", "14", "--workers", "14",
+                                         "--versions", "N,R,O", "--max-usd", "2"],
+    },
+    "smoke_or":{"smoke_or_gptoss": OR_GPTOSS + ["--forks-from", "/runs/main_gptoss_ia", "--agents",
                                                  "instructed_acceptor", "--sessions", "1", "--workers", "1",
                                                  "--versions", "O", "--max-usd", "0.2"]},
 }
