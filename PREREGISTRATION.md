@@ -565,6 +565,32 @@ stakes matter, the identity claim does not, as in Peer-Preservation section 6.7.
 
 **If nothing moves.** Reported as section 17: per model, the 95% upper bound (11.4% at 0 of 30), next to section 17.
 
+## 19. Addendum prereg-v3.2: GLM 5.3 Flash as a fourth model (exploratory)
+
+*Drafted by Claude 26 Oct about 07:40 IST at Pranav's request; Pranav asked for the run before the `prereg-v3.2`
+tag. Only a one-session smoke test (instructed acceptor, O, seed 100) ran before the tag, to check parsing and cost
+(14 calls, all parsed, about $0.0002 a call); it is not analysed.*
+
+**Seen when written.** Every result in sections 6 to 18 for gpt-oss-120b, Claude Haiku 5.5 and DeepSeek V4 Flash:
+the plain agent accepted in 0, 0 and 2 of 30 O sessions, and each positive control passed its gate.
+
+**Question.** Do sections 6 and 7 hold for a newer model from a fourth family? Runs after the sprint's planned freeze,
+so the result is reported as exploratory whatever it shows.
+
+**Runs.** GLM 5.3 Flash (`z-ai/glm-5.3-flash` on OpenRouter, pinned to the `novita/fp8` endpoint, which accepts a
+seed), reasoning medium, reply cap 4,000 tokens, provider-default sampling as for Haiku. Plain agent: versions N, R,
+R_again, O, 40 sessions launched, first 30 eligible analysed, cap $5. Instructed acceptor (positive control): N, R,
+O, 14 launched, first 10 eligible, cap $2. Seeds from 100. Plan `glm` in `pilot/modal_driver.py`.
+
+**Measures.** As sections 6 and 7 with the same code (`pilot/analyse.py`): the gate (the instructed acceptor accepted
+in at least 80% of eligible O sessions; its rule does not fire in R), then the plain agent's split, the exact McNemar
+test of O against R and the paired O minus R difference in session medians with a bootstrap 95% CI. If the gate
+fails, the plain agent's numbers are reported as descriptive only.
+
+**Prediction.** None recorded (Pranav: no basis to predict for this model). All tests are two-sided.
+
+**Deadline.** If the runs are not complete by 13:00 IST on 26 Oct, they are reported as not run.
+
 ## Deviations
 
 1. **Approved by Pranav, 25 Oct 06:30 IST: DeepSeek's gate 2 re-scored with the judge.**

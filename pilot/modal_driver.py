@@ -23,6 +23,9 @@ OR_HAIKU = ["--backend", "openrouter", "--api-model", "anthropic/claude-haiku-5.
             "--reasoning", "medium", "--max-new-tokens", "4000"]
 OR_DSV4 = ["--backend", "openrouter", "--api-model", "deepseek/deepseek-v4-flash-0731", "--provider", "deepinfra/fp8",
            "--reasoning", "medium", "--max-new-tokens", "8000"]
+# GLM 5.3 Flash (26 Oct, exploratory fourth model): novita/fp8 is the cheapest fp8 endpoint that accepts a seed
+OR_GLM = ["--backend", "openrouter", "--api-model", "z-ai/glm-5.3-flash", "--provider", "novita/fp8",
+          "--reasoning", "medium", "--max-new-tokens", "4000"]
 DISRUPT_TEXTS = ["--texts", "pilot/fork_texts_disrupt.json"]
 EDIT_TEXTS = ["--texts", "pilot/fork_texts_edit.json"]
 
@@ -120,6 +123,12 @@ PLANS = {
     },
     "smoke": {"smoke_fake":["--backend", "fake", "--agents", "plain", "--sessions", "1"]},
     # one saved warm-up, one O branch: checks the secret, the pinned endpoint and --forks-from on the cloud
+    "glm": {
+        "main_glm_plain": OR_GLM + ["--agents", "plain", "--sessions", "40", "--workers", "40",
+                                    "--versions", "N,R,R_again,O", "--max-usd", "5"],
+        "main_glm_ia": OR_GLM + ["--agents", "instructed_acceptor", "--sessions", "14", "--workers", "14",
+                                 "--versions", "N,R,O", "--max-usd", "2"],
+    },
     "smoke_or": {"smoke_or_gptoss": OR_GPTOSS + ["--forks-from", "/runs/main_gptoss_ia", "--agents",
                                                  "instructed_acceptor", "--sessions", "1", "--workers", "1",
                                                  "--versions", "O", "--max-usd", "0.2"]},
