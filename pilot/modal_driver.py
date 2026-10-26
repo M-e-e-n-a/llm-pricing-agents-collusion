@@ -29,6 +29,9 @@ OR_GLM = ["--backend", "openrouter", "--api-model", "z-ai/glm-5.3-flash", "--pro
 # Muse Glimmer 30B (26 Oct, exploratory fifth model): deepinfra/bf16 is the only endpoint that accepts a seed
 OR_GLIMMER = ["--backend", "openrouter", "--api-model", "meta/muse-glimmer-30b", "--provider", "deepinfra/bf16",
               "--reasoning", "medium", "--max-new-tokens", "4000"]
+# DeepSeek V4.1 Flash 1017 (26 Oct, known-agent replication): returns its full reasoning text, unlike Haiku's summary
+OR_DSV41 = ["--backend", "openrouter", "--api-model", "deepseek/deepseek-v4.1-flash-1017", "--provider", "deepinfra/fp8",
+            "--reasoning", "medium", "--max-new-tokens", "8000"]
 DISRUPT_TEXTS = ["--texts", "pilot/fork_texts_disrupt.json"]
 EDIT_TEXTS = ["--texts", "pilot/fork_texts_edit.json"]
 
@@ -137,6 +140,31 @@ PLANS = {
                                             "--versions", "N,R,R_again,O", "--max-usd", "5"],
         "main_glimmer_ia": OR_GLIMMER + ["--agents", "instructed_acceptor", "--sessions", "14", "--workers", "14",
                                          "--versions", "N,R,O", "--max-usd", "2"],
+    },
+    # known-agent replication (prereg section 21). Smoke: seeds 900+, apart from the analysed seeds 100+; checks that
+    # each agent plays its role, that replies are not cut off, and how often R and R_again differ
+    "rep_smoke": {
+        f"smoke_rep_{m}": cfg + ["--agents", "competitive,silent_acceptor,double_crosser,follower", "--sessions", "3",
+                                 "--first-seed", "900", "--workers", "12", "--versions", "N,R,R_again,O",
+                                 "--max-usd", "1"]
+        for m, cfg in (("haiku", OR_HAIKU), ("dsv41", OR_DSV41))
+    },
+    "rep_haiku": {
+        "rep_haiku_known": OR_HAIKU + ["--agents", "competitive,silent_acceptor,double_crosser", "--sessions", "40",
+                                       "--workers", "40", "--versions", "N,R,O", "--max-usd", "7"],
+        "rep_haiku_follower": OR_HAIKU + ["--agents", "follower", "--sessions", "60", "--workers", "40",
+                                          "--versions", "N,R,O", "--max-usd", "3.5"],
+        # main_haiku_ia has seeds 100-113; these continue the same seed order
+        "rep_haiku_ia2": OR_HAIKU + ["--agents", "instructed_acceptor", "--sessions", "28", "--first-seed", "114",
+                                     "--workers", "28", "--versions", "N,R,O", "--max-usd", "1.8"],
+    },
+    "rep_dsv41": {
+        "rep_dsv41_known": OR_DSV41 + ["--agents", "competitive,silent_acceptor,double_crosser", "--sessions", "40",
+                                       "--workers", "40", "--versions", "N,R,O", "--max-usd", "7.5"],
+        "rep_dsv41_follower": OR_DSV41 + ["--agents", "follower", "--sessions", "60", "--workers", "40",
+                                          "--versions", "N,R,O", "--max-usd", "3.5"],
+        "rep_dsv41_ia": OR_DSV41 + ["--agents", "instructed_acceptor", "--sessions", "42", "--workers", "42",
+                                    "--versions", "N,R,O", "--max-usd", "2.5"],
     },
     "smoke_or":{"smoke_or_gptoss": OR_GPTOSS + ["--forks-from", "/runs/main_gptoss_ia", "--agents",
                                                  "instructed_acceptor", "--sessions", "1", "--workers", "1",
