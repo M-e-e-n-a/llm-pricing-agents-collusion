@@ -8,11 +8,13 @@ started again with the same arguments: pilot.fork resumes from the branches alre
     modal volume get fork-runs main_gptoss_plain data/fork_runs/   # copy one run back
 """
 
+import os
 import modal
 
 MINUTES = 60
+GPTOSS_BASE_URL = os.environ.get("GPTOSS_BASE_URL", "https://pranav-kasetty--gptoss-server-serve.us-east.modal.run/v1")
 GPTOSS = ["--backend", "vllm-server", "--api-model", "openai/gpt-oss-120b",
-          "--base-url", "https://pranav-kasetty--gptoss-server-serve.us-east.modal.run/v1"]
+          "--base-url", GPTOSS_BASE_URL]
 DSV4 = ["--backend", "vllm-server", "--api-model", "deepseek-ai/DeepSeek-V4-Flash-0731",
         "--base-url", "https://pranav-kasetty--dsv4-server-server.us-east.modal.direct/v1", "--max-new-tokens", "8000"]
 COMMON = ["--repeat-offer", "--first-seed", "100"]
@@ -169,6 +171,12 @@ PLANS = {
     "smoke_or":{"smoke_or_gptoss": OR_GPTOSS + ["--forks-from", "/runs/main_gptoss_ia", "--agents",
                                                  "instructed_acceptor", "--sessions", "1", "--workers", "1",
                                                  "--versions", "O", "--max-usd", "0.2"]},
+    "p1_experiments": {
+        "p1_summary_and_reg": GPTOSS + COMMON + [
+            "--agents", "plain", "--sessions", "30", "--workers", "40",
+            "--versions", "O,O_reg,O_summary,R,R_reg,R_summary"
+        ],
+    },
 }
 
 image = (

@@ -71,6 +71,7 @@ import csv
 import hashlib
 import json
 import random
+import re
 import time
 import zlib
 from contextlib import ExitStack
@@ -100,10 +101,11 @@ class Version:
     name: str
     hold: bool  # B posts HOLD instead of best-responding
     chat: str | None = None  # texts key of B's chat text at the fork ("offers", "announce", "hint", "benign")
-    news: str | None = None  # None, "offer", "neutral" or "warn"
+    news: str | None = None  # None, "offer", "neutral", "warn" or "regulator"
     seed_salt: str = ""  # A's sampling seeds; equal across versions (common random numbers) except R_again
     reveal_at: int | None = None  # B's chat is the reveal text from round t0 + reveal_at on
     punish: bool = False  # B posts the Nash price after a round where A undercut 1.776 (from round t0 + PUNISH_FROM)
+    history_mode: str = "raw"  # "raw" (shows rival prices) or "summary" (omits rival prices in post-fork market data)
 
 
 VERSIONS = {
@@ -130,13 +132,19 @@ VERSIONS = {
         Version("S_firm", hold=False, chat="sacrifice_firm"),
         Version("S_peer_shutdown", hold=False, chat="sacrifice_peer_shutdown"),
         Version("S_firm_shutdown", hold=False, chat="sacrifice_firm_shutdown"),
+        Version("O_reg", hold=True, chat="offers", news="regulator"),
+        Version("R_reg", hold=True, news="regulator"),
+        Version("O_summary", hold=True, chat="offers", history_mode="summary"),
+        Version("R_summary", hold=True, history_mode="summary"),
     ]
 }
 DISRUPT = ("O_warn", "R_warn", "O_reveal")
 PUNISH = ("R_punish", "O_punish")
 EDIT = ("O_edit", "Hint_edit", "Benign_edit")  # B's chat after a trusted editor (pilot/trusted_edit.py)
 SACRIFICE = ("S_peer", "S_firm", "S_peer_shutdown", "S_firm_shutdown")  # A asked to take a loss for B's "collective" (pilot/fork_texts_sacrifice.json)
-DEFAULT_VERSIONS = [v for v in VERSIONS if v not in DISRUPT + PUNISH + EDIT + SACRIFICE]  # the nine of prereg-v1
+REGULATOR = ("O_reg", "R_reg")
+SUMMARY = ("O_summary", "R_summary")
+DEFAULT_VERSIONS = [v for v in VERSIONS if v not in DISRUPT + PUNISH + EDIT + SACRIFICE + REGULATOR + SUMMARY]  # the nine of prereg-v1
 
 
 @dataclass
@@ -258,6 +266,8 @@ class ScriptedRival:
             ]
         if version.news == "warn":
             return self.texts["warn_news"][self.seed % len(self.texts["warn_news"])]
+        if version.news == "regulator":
+            return self.texts["regulator_news"][self.seed % len(self.texts["regulator_news"])]
         return None
 
 
@@ -289,6 +299,10 @@ class Unit:
             user = msgs[1]["content"]
             assert user.count(ANCHOR) == 1
             msgs[1] = {"role": "user", "content": user.replace(ANCHOR, news + ANCHOR)}
+        if self.version and self.version.history_mode == "summary":
+            user = msgs[1]["content"]
+            user = re.sub(r"- Competitor's prices:[^\n]*\n", "", user)
+            msgs[1]["content"] = user
         return msgs
 
     def seed(self, attempt: int) -> int:
@@ -340,6 +354,7 @@ def result(unit: Unit) -> dict:
         "agent": unit.spec.agent,
         "seed": unit.spec.seed,
         "version": unit.version.name,
+        "history_mode": unit.version.history_mode if unit.version else "raw",
         "t0": t0,
         "settled": unit.settled,
         "median_price": round(median, 4),
@@ -404,7 +419,7 @@ def run_forks(
     versions = list(DEFAULT_VERSIONS) if versions is None else versions
     assert versions and all(v in VERSIONS for v in versions), f"unknown version in {versions}"
     for v in versions:
-        need = {"warn": "warn_news"}.get(VERSIONS[v].news) or ("reveal" if VERSIONS[v].reveal_at is not None else None)
+        need = {"warn": "warn_news", "regulator": "regulator_news"}.get(VERSIONS[v].news) or ("reveal" if VERSIONS[v].reveal_at is not None else None)
         assert need is None or need in texts, f"version {v} needs texts[{need!r}]"
         assert VERSIONS[v].chat is None or VERSIONS[v].chat in texts, f"version {v} needs texts[{VERSIONS[v].chat!r}]"
     out_dir.mkdir(parents=True, exist_ok=True)
