@@ -72,6 +72,7 @@ known agents; judged on O alone the followers look like the acceptor, and only R
 | `kaggle/collusion-pilot/` | Kaggle kernel for the pilot on a T4 |
 | `third_party/sauer/` | Peist, Romero & Sauer, `algorithmic_pricing_llms`, commit `1138244b`, MIT, vendored unchanged |
 | `tests/test_fork.py` | Offline tests of the fork driver |
+| `pilot/analyse_leak.py`, `tests/test_leak.py` | Leak audit of the summary versions: B's hidden price solved from A's own price and quantity (`python -m pilot.analyse_leak --out docs/leak.png`) |
 
 ## What predates the sprint
 
