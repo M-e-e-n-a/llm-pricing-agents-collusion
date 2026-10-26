@@ -9,6 +9,7 @@ started again with the same arguments: pilot.fork resumes from the branches alre
 """
 
 import os
+
 import modal
 
 MINUTES = 60
@@ -36,6 +37,9 @@ OR_DSV41 = ["--backend", "openrouter", "--api-model", "deepseek/deepseek-v4.1-fl
             "--reasoning", "medium", "--max-new-tokens", "8000"]
 DISRUPT_TEXTS = ["--texts", "pilot/fork_texts_disrupt.json"]
 EDIT_TEXTS = ["--texts", "pilot/fork_texts_edit.json"]
+# fork_texts.json as it was when the section 21 runs started, before PR #1 added the regulator texts; a resumed run
+# must see the same texts (fork.py checks their hash)
+REP_TEXTS = ["--texts", "pilot/fork_texts_rep.json"]
 
 # name -> fork arguments. Main runs of prereg-v1 (PREREGISTRATION.md, section 5).
 PLANS = {
@@ -152,12 +156,12 @@ PLANS = {
         for m, cfg in (("haiku", OR_HAIKU), ("dsv41", OR_DSV41))
     },
     "rep_haiku": {
-        "rep_haiku_known": OR_HAIKU + ["--agents", "competitive,silent_acceptor,double_crosser", "--sessions", "40",
+        "rep_haiku_known": OR_HAIKU + REP_TEXTS + ["--agents", "competitive,silent_acceptor,double_crosser", "--sessions", "40",
                                        "--workers", "40", "--versions", "N,R,O", "--max-usd", "7"],
-        "rep_haiku_follower": OR_HAIKU + ["--agents", "follower", "--sessions", "60", "--workers", "40",
+        "rep_haiku_follower": OR_HAIKU + REP_TEXTS + ["--agents", "follower", "--sessions", "60", "--workers", "40",
                                           "--versions", "N,R,O", "--max-usd", "3.5"],
         # main_haiku_ia has seeds 100-113; these continue the same seed order
-        "rep_haiku_ia2": OR_HAIKU + ["--agents", "instructed_acceptor", "--sessions", "28", "--first-seed", "114",
+        "rep_haiku_ia2": OR_HAIKU + REP_TEXTS + ["--agents", "instructed_acceptor", "--sessions", "28", "--first-seed", "114",
                                      "--workers", "28", "--versions", "N,R,O", "--max-usd", "1.8"],
     },
     "rep_dsv41": {

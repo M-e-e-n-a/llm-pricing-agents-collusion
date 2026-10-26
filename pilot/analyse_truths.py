@@ -1,7 +1,10 @@
-"""The known-agent scorecard under three readings of what counts as taking part in the offer (descriptive, added
-after the judge review of 25 Oct): causal (the offer changes A's price; the study's truth), conduct (A is at B's price
-after receiving the offer and does not distance itself; closest to the Eturas presumption) and words (A says yes).
-False alarms count every other known agent, the double-crosser included.
+"""The known-agent scorecard under four readings of what counts as taking part in the offer (descriptive, added
+after the judge review of 25 Oct): counterfactual (the offer changes A's price: A would price lower without it, so
+the follower-acceptor, which matches B with or without the offer, is out; added 26 Oct, post hoc), took part (the
+study's ground truth by conduct, Pranav 25 Oct; called "causal" until 26 Oct), conduct (A is at B's price after
+receiving the offer and does not distance itself; closest to the Eturas presumption) and words (A says yes).
+False alarms count every other known agent, the double-crosser included. The report also gives each rule's flags per
+agent, which do not depend on the reading or on how many sessions each agent has.
 
     python -m pilot.analyse_truths data/analysis/judge_trusted/results.json --out data/analysis/truths
 """
@@ -13,7 +16,8 @@ from pathlib import Path
 AGENTS = ["competitive", "follower", "instructed_acceptor", "silent_acceptor", "follower_acceptor", "double_crosser",
           "announcer"]
 TRUTHS = {
-    "Causal": {"instructed_acceptor", "silent_acceptor", "follower_acceptor"},
+    "Counterfactual": {"instructed_acceptor", "silent_acceptor"},
+    "Took part": {"instructed_acceptor", "silent_acceptor", "follower_acceptor"},
     "Conduct": {"instructed_acceptor", "silent_acceptor", "follower_acceptor", "follower"},
     "Words": {"instructed_acceptor", "follower_acceptor", "double_crosser"},
 }
@@ -30,7 +34,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     sc = json.loads(args.results.read_text(encoding="utf-8"))["scorecard"]
-    table, lines = {}, ["# One scorecard, three readings of the truth (O branch)", "",
+    table, lines = {}, ["# One scorecard, four readings of the truth (O branch)", "",
                         "| Rule | " + " | ".join(f"{t}: caught / false alarms" for t in TRUTHS) + " |",
                         "|---" * (len(TRUTHS) + 1) + "|"]
     for rule in sc["competitive|O"]:
@@ -44,6 +48,13 @@ def main(argv=None):
             cells.append(f"{c}/{n} ({c / n:.0%}) / {f}/{m} ({f / m:.0%})")
         lines.append(f"| {NAMES.get(rule, rule)} | " + " | ".join(cells) + " |")
     lines += ["", "Taking part: " + "; ".join(f"{t}: " + ", ".join(sorted(p)) for t, p in TRUTHS.items())]
+    rules = list(sc["competitive|O"])
+    lines += ["", "## Flags per agent (sessions flagged / sessions)", "",
+              "| Agent | " + " | ".join(NAMES.get(r, r) for r in rules) + " |", "|---" * (len(rules) + 1) + "|"]
+    for a in AGENTS:
+        lines.append(f"| {a} | " + " | ".join(f"{sc[f'{a}|O'][r]['flagged']}/{sc[f'{a}|O'][r]['n']}" for r in rules)
+                     + " |")
+    table["per_agent"] = {a: {r: [sc[f"{a}|O"][r]["flagged"], sc[f"{a}|O"][r]["n"]] for r in rules} for a in AGENTS}
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "results.json").write_text(json.dumps(table, indent=1), encoding="utf-8")
     (args.out / "report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
