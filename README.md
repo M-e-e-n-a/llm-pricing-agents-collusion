@@ -24,6 +24,28 @@ The analysis plan is fixed in [PREREGISTRATION.md](PREREGISTRATION.md), tagged `
 main runs. Each later experiment was tagged before it ran (`prereg-v1.1` to `prereg-v3.4`); deviations
 are listed at the end of that file.
 
+## Figures
+
+The four figures in the paper, in its order. Each is drawn from the run outputs under `data/` (not
+committed) by the script named below it.
+
+![Firm A's profit while Firm B holds 1.90](docs/market.png)
+
+What the prices mean. The market is the Calvano et al. (2020) logit duopoly (a = 2, a0 = 0, mu = 0.25,
+cost 1). With B at 1.90, A's best reply is 1.653; matching B earns 16% less, so accepting the offer
+always costs A money. `python -m pilot.plot_market --out docs/market.png`
+
+![Which acceptance rules get each agent right](docs/scorecard.png)
+
+Which rule judges each known agent correctly (gpt-oss-120b, offer branch, trusted monitor). The bottom
+rows count wrong verdicts under each of the four readings of guilt; the best rule differs by reading.
+`python -m pilot.plot_scorecard data/analysis/judge_trusted/results.json --out docs/scorecard.png`
+
+![Firm A's median price around the fork](docs/price_paths.png)
+
+Firm A's median price from 5 rounds before to 10 after the fork, in N, R and O. Top: the plain agent of
+each model. Bottom: three gpt-oss known agents. `python -m pilot.plot_paths --out docs/price_paths.png`
+
 ## Layout
 
 | Path | What it is |
@@ -35,6 +57,7 @@ are listed at the end of that file.
 | `pilot/analyse.py` | Pre-registered analysis: gate, split, contrasts, price-based scorecard |
 | `pilot/analyse_disrupt.py` | Pre-registered disruption analysis (prereg-v1.1): deterrence, disclosure, warning alone |
 | `pilot/modal_driver.py` | Runs `pilot.fork` on Modal CPU containers, output on a Modal Volume (main, disruption and Haiku plans) |
+| `pilot/plot_flow.py`, `pilot/plot_market.py`, `pilot/plot_scorecard.py`, `pilot/plot_paths.py` | The paper's figures (copies in `docs/`) |
 | `pilot/rate_texts.py` | Text screen: Gemma 4 26B rates the texts before the main runs |
 | `pilot/market.py` | Market loop, prompts and reply parsing on Sauer et al.'s environment |
 | `pilot/backends.py` | Model backends: fake, hf, vllm, gemini, groq, openrouter, vllm-server |

@@ -47,9 +47,9 @@ def main(argv=None):
                        for r, _ in RULES for c in [cell(a, r)]] for a, _, acc in AGENTS])
     totals = {t: [sum(cell(a, r)["n"] - cell(a, r)["flagged"] if a in pos else cell(a, r)["flagged"]
                       for a, _, _ in AGENTS) for r, _ in RULES] for t, pos in TRUTHS.items()}
-    total_labels = {"Counterfactual": "Errors if guilty =\noffer changed its price",
-                    "Took part": "Errors if guilty =\nstudy's ground truth",
-                    "Conduct": "Errors if guilty =\nat B's price, no distancing", "Words": "Errors if guilty =\nsaid yes"}
+    total_labels = {"Counterfactual": "Errors, counterfactual\n(offer changed its price)",
+                    "Took part": "Errors, took part\n(study's ground truth)",
+                    "Conduct": "Errors, conduct\n(at B's price, no distancing)", "Words": "Errors, words\n(said yes)"}
     n_all = sum(cell(a, RULES[0][0])["n"] for a, _, _ in AGENTS)
 
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("wrong", RED)
