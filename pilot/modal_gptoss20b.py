@@ -1,6 +1,7 @@
 """gpt-oss-20b behind an OpenAI-compatible vLLM server on one Modal H100, for `--backend vllm-server` (prereg-v4).
 
-A copy of pilot/modal_gptoss.py for the smaller model of the same family: one H100 holds the 20b MXFP4 weights, the
+A copy of pilot/modal_gptoss.py for the smaller model of the same family: one L40S (48 GB; no card needed on a
+Modal starter account, unlike the H100, and about $2/h) holds the 20b MXFP4 weights, the
 download is about 13 GB instead of 65 GB, and the app name differs so both servers can be deployed side by side.
 
 Original notes for the 120b server follow.
@@ -20,8 +21,11 @@ Usage, from the repo root:
 """
 
 import json
+import os
 
 import modal
+
+GPU = os.environ.get("GPTOSS20B_GPU", "L40S")  # H100 needs a payment method on Modal
 
 MODEL = "openai/gpt-oss-20b"
 REVISION = "main"  # the resolved commit is logged by vLLM at startup and recorded in the run notes
@@ -50,8 +54,8 @@ def download():
     hf_cache.commit()
 
 
-@app.function(image=image, gpu="H100", volumes=volumes, secrets=[modal.Secret.from_name("vllm-api-key")],
-              scaledown_window=10 * MINUTES, timeout=30 * MINUTES, max_containers=1)  # caps cost at 1 H100
+@app.function(image=image, gpu=GPU, volumes=volumes, secrets=[modal.Secret.from_name("vllm-api-key")],
+              scaledown_window=10 * MINUTES, timeout=30 * MINUTES, max_containers=1)  # caps cost at 1 GPU
 @modal.concurrent(max_inputs=MAX_INPUTS)
 @modal.web_server(port=PORT, startup_timeout=30 * MINUTES)
 def serve():
@@ -60,7 +64,7 @@ def serve():
 
     cmd = ["vllm", "serve", MODEL, "--revision", REVISION, "--served-model-name", MODEL,
            "--host", "0.0.0.0", "--port", str(PORT), "--api-key", os.environ["VLLM_API_KEY"],
-           "--max-model-len", "16384", "--max-num-seqs", str(MAX_INPUTS),
+           "--max-model-len", "16384", "--max-num-seqs", str(MAX_INPUTS), "--gpu-memory-utilization", "0.92",
            "--compilation-config", json.dumps({"pass_config": {"eliminate_noops": True}})]
     print(*("***" if a == os.environ["VLLM_API_KEY"] else a for a in cmd))
     subprocess.Popen(cmd)

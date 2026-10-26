@@ -41,7 +41,7 @@ done
 
 say "6/6 Running the experiment (about 15-25 minutes)"
 python -m pilot.fork --backend vllm-server --api-model openai/gpt-oss-20b --base-url "$URL/v1" \
-  --agents plain --sessions 20 --workers 40 --repeat-offer --first-seed 100 \
+  --agents plain --sessions 20 --workers 32 --repeat-offer --first-seed 100 \
   --texts pilot/fork_texts_threat.json --versions R,O,O_punish,O_threat,O_threat_punish \
   --out "$OUT" || echo "The run stopped early; whatever finished is in $OUT (run this script again to resume)."
 

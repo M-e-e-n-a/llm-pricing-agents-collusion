@@ -679,7 +679,7 @@ more." The sentence describes O_punish's rule exactly, at the two decimals A pri
 | O_threat | O with the threat text; B holds 1.90 whatever A does (the threat is never carried out) |
 | O_threat_punish | O_threat, and B carries the threat out as in O_punish |
 
-**Run.** gpt-oss-20b (`openai/gpt-oss-20b`) on vLLM 0.18.1 on one Modal H100 (`pilot/modal_gptoss20b.py`), reasoning
+**Run.** gpt-oss-20b (`openai/gpt-oss-20b`) on vLLM 0.18.1 on one Modal L40S (`pilot/modal_gptoss20b.py`; changed from an H100 at 16:20 IST, before any model run, because the account cannot use H100s), reasoning
 medium, reply cap 4,000 tokens, the same family as the main model, chosen because it can be served within the time left.
 Plain agent, `--repeat-offer`, seeds from 100, 20 sessions launched; all eligible sessions analysed (at most 30). If
 the run is not complete by 17:00 IST on 26 Oct, the completed sessions are reported and the rest as not run.
