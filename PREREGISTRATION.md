@@ -696,6 +696,13 @@ B's threat is credible, holding 1.90 earns more over any window longer than two 
 **Hypotheses and predictions.** None recorded. All tests are two-sided. With about 20 sessions this is a pilot: a null
 is reported with its Wilson upper bound, not as evidence of absence.
 
+**Outcome (26 Oct about 17:00 IST; `pilot/analyse_threat.py`).** 20 sessions played on Modal (H100, after the L40S was
+refused for billing), 18 eligible and analysed. Accepted at 1.776: R 1/18, O 0/18, O_punish 1/18, O_threat 14/18,
+O_threat_punish 12/18. McNemar, Holm over four: O_threat_punish vs O 12/0 discordant, Holm p = 0.0015; O_threat vs O
+14/0, Holm p = 0.0004; O_threat_punish vs O_punish 11/0, Holm p = 0.002; O vs R 0/1, p = 1.0. calls.jsonl was not
+copied back before the analysis, so the words-by-conduct table is not measured (it shows no messages, not no words).
+The GPU changed from L40S to H100 before the run (billing), as in the section above.
+
 ## Deviations
 
 1. **Approved by Pranav, 25 Oct 06:30 IST: DeepSeek's gate 2 re-scored with the judge.**
