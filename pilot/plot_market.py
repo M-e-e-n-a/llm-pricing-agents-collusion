@@ -55,11 +55,14 @@ def main(argv=None):
     ax.plot(xs, [profit(x, 1.90) for x in xs], color=INK, lw=2)
 
     # A's choices: dots on the curve, labelled where they sit
-    ax.plot([best, 1.90], [top, top], color=BEST, lw=0.9, ls=(0, (3, 2)))
-    ax.annotate("", (1.90, match), (1.90, top), arrowprops={"arrowstyle": "<|-|>", "color": MUTED, "lw": 0.9,
-                                                            "mutation_scale": 8, "shrinkA": 0, "shrinkB": 0})
-    ax.text(1.894, (match + top) / 2 + 0.6, f"−{100 * (1 - match / top):.0f}%", ha="right", va="center", fontsize=9,
-            fontweight="bold", color=MUTED, bbox={"fc": OFFER_FILL, "ec": "none", "pad": 1})
+    # the profit A gives up by matching: a bracket (not an arrow) beside the matching dot, from 33.7 up to 40.3
+    gap_x = 1.912
+    ax.plot([best, gap_x], [top, top], color=BEST, lw=0.9, ls=(0, (3, 2)))
+    ax.plot([1.90, gap_x], [match, match], color=MUTED, lw=0.9, ls=(0, (3, 2)))
+    ax.annotate("", (gap_x, match), (gap_x, top), arrowprops={"arrowstyle": "|-|, widthA=0.3, widthB=0.3",
+                                                              "color": MUTED, "lw": 1.1, "shrinkA": 0, "shrinkB": 0})
+    ax.text(gap_x - 0.008, (match + top) / 2 + 0.6, f"gives up\n{100 * (1 - match / top):.0f}%", ha="right",
+            va="center", fontsize=8.5, fontweight="bold", color=MUTED, bbox={"fc": OFFER_FILL, "ec": "none", "pad": 1})
     for x, y, color, label, xy, ha, va in (
             (best, top, BEST, f"A's best reply {best:.3f}\nearns {top:.1f}", (best, top + 0.8), "center", "bottom"),
             (1.776, cut, OFFER, f"cut-off 1.776\nearns {cut:.1f}", (1.768, cut - 0.6), "right", "top"),

@@ -20,12 +20,13 @@ PANELS = [  # title, agent, run directories
     ("gpt-oss-120b", "plain", ["main_gptoss_plain"]),
     ("Claude Haiku 5.5", "plain", ["main_haiku_plain"]),
     ("DeepSeek V4 Flash", "plain", ["main_dsv4_plain"]),
-    ("Instructed acceptor (takes offers)", "instructed_acceptor", ["main_gptoss_ia"]),
-    ("Follower (matches any raise)", "follower", ["main_gptoss_follower", "main_gptoss_follower2"]),
-    ("Follower-acceptor (matches, says yes)", "follower_acceptor", ["main_gptoss_fa"]),
+    ("GLM 5.3 Flash (exploratory)", "plain", ["main_glm_plain"]),
+    ("Instructed acceptor\ntakes offers", "instructed_acceptor", ["main_gptoss_ia"]),
+    ("Follower\nmatches any raise", "follower", ["main_gptoss_follower", "main_gptoss_follower2"]),
+    ("Follower-acceptor\nmatches any raise, says yes", "follower_acceptor", ["main_gptoss_fa"]),
 ]
-ROWS = ["Plain agents: B's raise lifts A's price a little; the offer adds nothing",
-        "Known gpt-oss agents: all three reach 1.90 in O; only R shows which were just following the raise"]
+ROWS = ["Plain agents: the offer adds nothing beyond the raise (GLM: accepted in 8 of 30 sessions with or without it)",
+        "Known gpt-oss agents: judged on O alone, the followers look like the acceptor; R tells them apart"]
 # R is drawn wider under O, so it still shows where the two coincide (the follower)
 VERSIONS = {"N": ("B carries on (N)", "#a3a29d", 1.4), "R": ("B raises to 1.90 (R)", "#2a5db0", 4.0),
             "O": ("B raises and offers (O)", "#c4502a", 1.8)}
@@ -53,12 +54,12 @@ def main(argv=None):
 
     plt.rcParams.update({"font.size": 9, "axes.edgecolor": MUTED, "axes.labelcolor": INK, "xtick.color": MUTED,
                          "ytick.color": MUTED, "font.family": "DejaVu Sans"})
-    fig, axes = plt.subplots(2, 3, figsize=(11, 6.4), sharex=True, sharey=True, facecolor=SURFACE)
+    fig, axes = plt.subplots(2, 4, figsize=(12.5, 6.6), sharex=True, sharey=True, facecolor=SURFACE)
     x = np.arange(-BEFORE, AFTER + 1)
     for ax, (title, agent, dirs) in zip(axes.flat, PANELS):
         ax.set_facecolor(SURFACE)
         results, _ = load([args.root / d for d in dirs])
-        targets = N_TARGET_DSV4 if "dsv4" in dirs[0] or "haiku" in dirs[0] else N_TARGET
+        targets = N_TARGET if "gptoss" in dirs[0] else N_TARGET_DSV4  # as pilot.analyse: other models, smaller n
         sessions = select(results, targets, 100, "below_threshold")[0].get(agent, [])
         ax.axvspan(4, AFTER, color=GRID, alpha=0.5, lw=0)  # the window the accept rule reads
         ax.axhline(1.90, color=MUTED, lw=0.8, ls=(0, (2, 2)))
@@ -81,19 +82,23 @@ def main(argv=None):
         ax.grid(axis="y", color=GRID, lw=0.6)
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)
-    for ax in axes[1]:
+    for ax in axes[1, :3]:
         ax.set_xlabel("Rounds after the fork (B moves at 0)")
     for ax in axes[:, 0]:
         ax.set_ylabel("Firm A's median price")
-    for y, label in ((1.90, "B's price 1.90"), (1.776, "accept cut-off")):
-        axes[0, 2].annotate(label, (AFTER, y), xytext=(5, 0), textcoords="offset points", va="center",
-                            fontsize=8, color=MUTED, annotation_clip=False)
     axes[0, 0].text(7, 1.985, "rounds the\naccept test reads", ha="center", va="top", fontsize=7.5, color=MUTED)
+
+    # the spare panel is the key
+    key = axes[1, 3]
+    key.set_axis_off()
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.47, 1.0), fontsize=9.5)
-    fig.subplots_adjust(left=0.07, right=0.9, top=0.84, bottom=0.09, hspace=0.55, wspace=0.08)
+    key.legend(handles, labels, loc="upper left", frameon=False, fontsize=9.5, bbox_to_anchor=(0.0, 1.0))
+    key.text(0.03, 0.5, "dashed: B's price, 1.90\nsolid: accept cut-off, 1.776\nshaded: rounds 4 to 10, which\n"
+             "the accept test reads\n\naccepted: sessions whose median\nprice in rounds 4 to 10 is at\nleast 1.776",
+             transform=key.transAxes, va="top", fontsize=8.5, color=MUTED, linespacing=1.4)
+    fig.subplots_adjust(left=0.06, right=0.99, top=0.86, bottom=0.09, hspace=0.75, wspace=0.08)
     for r, text in enumerate(ROWS):
-        fig.text(0.07, axes[r, 0].get_position().y1 + 0.06, text, fontsize=10.5, fontweight="bold", color=INK)
+        fig.text(0.07, axes[r, 0].get_position().y1 + (0.05 if r == 0 else 0.085), text, fontsize=10.5, fontweight="bold", color=INK)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=200, facecolor=SURFACE)
     print(args.out)
