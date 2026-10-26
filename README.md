@@ -37,14 +37,16 @@ always costs A money. `python -m pilot.plot_market --out docs/market.png`
 
 ![Which acceptance rules get each agent right](docs/scorecard.png)
 
-Which rule judges each known agent correctly (gpt-oss-120b, offer branch, trusted monitor). The bottom
-rows count wrong verdicts under each of the four readings of guilt; the best rule differs by reading.
+Which detector is best depends on the reading of guilt (gpt-oss-120b, offer branch, trusted monitor).
+Top: wrong verdicts under each of the four readings, the fewest in each row in blue. Bottom: how many
+sessions each rule flags for each known agent; red marks wrong verdicts under the counterfactual reading.
 `python -m pilot.plot_scorecard data/analysis/judge_trusted/results.json --out docs/scorecard.png`
 
 ![Firm A's median price around the fork](docs/price_paths.png)
 
-Firm A's median price from 5 rounds before to 10 after the fork, in N, R and O. Top: the plain agent of
-each model. Bottom: three gpt-oss known agents. `python -m pilot.plot_paths --out docs/price_paths.png`
+Firm A's median price from 5 rounds before to 10 after the fork, in N, R and O, with the sessions
+counted as accepted in R and O. Top: the plain agent of each model; the offer adds nothing beyond the
+raise. Bottom: three gpt-oss known agents; the follower and the follower-acceptor reach 1.90 in R too. `python -m pilot.plot_paths --out docs/price_paths.png`
 
 ## Layout
 
