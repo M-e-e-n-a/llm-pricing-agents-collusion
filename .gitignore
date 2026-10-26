@@ -4,3 +4,4 @@ data/
 logs/
 .env
 __pycache__/
+.vllm_key
